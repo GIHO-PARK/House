@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>식물성 멜라토닌 2mg | 오늘 밤부터 달라지는 잠</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;600;700&family=Song+Myung&family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  @font-face {
+    font-family: 'Pretendard';
+    src: url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/woff2/PretendardVariable.woff2') format('woff2-variations');
+    font-weight: 45 920;
+  }
+
+  :root{
+    --night-deep:#1c1626;
+    --night:#2c2438;
+    --night-soft:#3c3148;
+    --mauve:#b98a92;
+    --mauve-soft:#c99ea3;
+    --gold:#d3a765;
+    --gold-light:#e8c9a0;
+    --ivory:#f7f1e8;
+    --ivory-deep:#f2e3cc;
+    --ink:#2c2438;
+    --ink-soft:#5c5266;
+    --cream-text:#f3ead9;
+    --cream-text-soft:#d8c9c9;
+  }
+
+  *{box-sizing:border-box; margin:0; padding:0;}
+
+  html,body{
+    background:#0f0c14;
+    font-family:'Pretendard','Noto Sans KR',-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+  }
+
+  body{
+    display:flex;
+    justify-content:center;
+  }
+
+  .frame{
+    position:relative;
+    width:100%;
+    max-width:430px;
+    min-height:100vh;
+    overflow:hidden;
+    background:linear-gradient(to bottom,
+      var(--night-deep) 0%,
+      var(--night) 10%,
+      var(--night-soft) 20%,
+      #4a3d54 30%,
+      #6b5460 42%,
+      #a97f7f 54%,
+      var(--mauve-soft) 62%,
+      var(--gold) 72%,
+      var(--gold-light) 82%,
+      var(--ivory-deep) 92%,
+      var(--ivory) 100%
+    );
+  }
+
+  img{max-width:100%; display:block;}
+
+  .serif{ font-family:'Noto Serif KR','Song Myung',serif; }
+  .display{ font-family:'Song Myung','Noto Serif KR',serif; }
+
+  section{
+    position:relative;
+    padding:64px 24px;
+  }
+
+  .reveal{
+    opacity:0;
+    transform:translateY(18px);
+    transition:opacity .8s ease, transform .8s ease;
+  }
+  .reveal.in{
+    opacity:1;
+    transform:translateY(0);
+  }
+
+  /* ---------- HERO ---------- */
+  .hero{
+    min-height:88vh;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    text-align:center;
+    padding:80px 28px 60px;
+    overflow:hidden;
+  }
+
+  .stars{
+    position:absolute; inset:0;
+    background-image:
+      radial-gradient(1.5px 1.5px at 20% 18%, rgba(255,255,255,.75), transparent),
+      radial-gradient(1.5px 1.5px at 75% 12%, rgba(255,255,255,.55), transparent),
+      radial-gradient(1px 1px at 85% 30%, rgba(255,255,255,.6), transparent),
+      radial-gradient(1.5px 1.5px at 10% 45%, rgba(255,255,255,.45), transparent),
+      radial-gradient(1px 1px at 55% 8%, rgba(255,255,255,.55), transparent),
+      radial-gradient(1.5px 1.5px at 35% 55%, rgba(255,255,255,.35), transparent),
+      radial-gradient(1px 1px at 90% 60%, rgba(255,255,255,.4), transparent);
+    background-repeat:no-repeat;
+    animation:twinkle 5s ease-in-out infinite alternate;
+    pointer-events:none;
+  }
+  @keyframes twinkle{
+    0%{opacity:.4;}
+    50%{opacity:1;}
+    100%{opacity:.5;}
+  }
+
+  .moon-wrap{
+    position:relative;
+    width:120px; height:120px;
+    margin:0 auto 40px;
+  }
+  .moon{
+    position:absolute; inset:0;
+    border-radius:50%;
+    background:radial-gradient(circle at 35% 32%, #fdf3df 0%, var(--gold-light) 45%, var(--gold) 100%);
+    box-shadow:0 0 40px 8px rgba(211,167,101,.35), 0 0 90px 30px rgba(211,167,101,.15);
+    animation:glow 4.5s ease-in-out infinite;
+  }
+  @keyframes glow{
+    0%,100%{ box-shadow:0 0 40px 8px rgba(211,167,101,.3), 0 0 90px 30px rgba(211,167,101,.12); }
+    50%{ box-shadow:0 0 55px 14px rgba(211,167,101,.5), 0 0 110px 40px rgba(211,167,101,.22); }
+  }
+  .moon::after{
+    content:'';
+    position:absolute;
+    top:14%; left:8%;
+    width:26%; height:26%;
+    border-radius:50%;
+    background:rgba(211,167,101,.28);
+    filter:blur(1px);
+  }
+
+  .eyebrow{
+    display:inline-block;
+    font-size:12px;
+    letter-spacing:.22em;
+    color:var(--gold-light);
+    text-transform:uppercase;
+    margin-bottom:18px;
+    opacity:.85;
+  }
+
+  .hero h1{
+    color:var(--cream-text);
+    font-size:28px;
+    line-height:1.5;
+    font-weight:600;
+    letter-spacing:-.01em;
+  }
+  .hero h1 .accent{
+    color:var(--gold-light);
+  }
+
+  .hero .sub{
+    margin-top:22px;
+    font-size:15px;
+    color:var(--cream-text-soft);
+    letter-spacing:.02em;
+  }
+
+  .scroll-hint{
+    margin-top:56px;
+    font-size:12px;
+    color:rgba(243,234,217,.55);
+    letter-spacing:.15em;
+  }
+  .scroll-hint::after{
+    content:'';
+    display:block;
+    width:1px; height:34px;
+    margin:10px auto 0;
+    background:linear-gradient(to bottom, rgba(243,234,217,.7), transparent);
+    animation:drip 1.8s ease-in-out infinite;
+  }
+  @keyframes drip{
+    0%{ transform:scaleY(0); transform-origin:top; opacity:0; }
+    40%{ transform:scaleY(1); transform-origin:top; opacity:1; }
+    100%{ transform:scaleY(1); transform-origin:bottom; opacity:0; }
+  }
+
+  /* ---------- REVIEW (top killing review) ---------- */
+  .review-top{
+    padding-top:20px;
+  }
+  .review-card{
+    background:rgba(255,255,255,.06);
+    border:1px solid rgba(243,234,217,.14);
+    border-radius:20px;
+    padding:28px 24px;
+    backdrop-filter:blur(6px);
+  }
+  .review-card .quote-mark{
+    font-family:'Song Myung',serif;
+    font-size:40px;
+    color:var(--gold-light);
+    line-height:1;
+    margin-bottom:8px;
+    opacity:.8;
+  }
+  .review-card p{
+    color:var(--cream-text);
+    font-size:15px;
+    line-height:1.85;
+    letter-spacing:-.01em;
+  }
+  .review-card .stars-rating{
+    color:var(--gold-light);
+    font-size:13px;
+    letter-spacing:2px;
+    margin-bottom:14px;
+  }
+  .review-card .author{
+    margin-top:18px;
+    font-size:12.5px;
+    color:var(--cream-text-soft);
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .review-card .author::before{
+    content:'';
+    width:22px; height:22px;
+    border-radius:50%;
+    background:linear-gradient(135deg, var(--gold-light), var(--mauve));
+    flex-shrink:0;
+  }
+
+  /* ---------- AM 3:00 ---------- */
+  .am-section{ text-align:center; padding-top:80px; }
+  .am-time{
+    font-family:'Song Myung',serif;
+    font-size:56px;
+    color:var(--cream-text);
+    letter-spacing:.02em;
+    line-height:1;
+  }
+  .am-time span{
+    display:block;
+    font-size:12px;
+    font-family:'Pretendard','Noto Sans KR',sans-serif;
+    letter-spacing:.3em;
+    color:var(--mauve-soft);
+    margin-bottom:10px;
+  }
+  .am-section .lead{
+    margin-top:26px;
+    font-size:16px;
+    line-height:1.75;
+    color:var(--cream-text);
+    font-weight:500;
+  }
+  .am-section .body-text{
+    margin-top:22px;
+    font-size:14.5px;
+    line-height:1.9;
+    color:var(--cream-text-soft);
+  }
+  .stat-pill{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    margin:26px auto 0;
+    padding:10px 18px;
+    border-radius:999px;
+    background:rgba(211,167,101,.14);
+    border:1px solid rgba(211,167,101,.35);
+    color:var(--gold-light);
+    font-size:13px;
+    font-weight:600;
+  }
+  .stat-pill b{ font-size:16px; }
+
+  .divider-line{
+    width:36px; height:1px;
+    background:rgba(243,234,217,.3);
+    margin:36px auto;
+  }
+
+  /* ---------- CORTISOL ---------- */
+  .cortisol-section p{
+    font-size:14.5px;
+    line-height:1.9;
+    color:var(--ink);
+  }
+  .cortisol-section{
+    text-align:center;
+  }
+  .cortisol-section .tag{
+    display:block;
+    font-size:12px;
+    letter-spacing:.2em;
+    color:var(--night-soft);
+    margin-bottom:16px;
+    opacity:.65;
+  }
+  .cortisol-section p + p{ margin-top:14px; }
+
+  /* ---------- SOLUTION ---------- */
+  .solution-section{
+    text-align:center;
+  }
+  .solution-title{
+    font-size:13px;
+    letter-spacing:.2em;
+    color:var(--ink-soft);
+    margin-bottom:10px;
+  }
+  .solution-section h2{
+    font-family:'Noto Serif KR',serif;
+    font-size:26px;
+    color:var(--ink);
+    font-weight:700;
+    margin-bottom:36px;
+  }
+
+  .capsule-stage{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:28px;
+    margin:0 auto 40px;
+    padding:36px 20px;
+    background:rgba(255,255,255,.45);
+    border:1px solid rgba(211,167,101,.3);
+    border-radius:24px;
+  }
+  .capsule{
+    position:relative;
+    width:54px; height:22px;
+    border-radius:11px;
+    background:linear-gradient(90deg, var(--gold) 0%, var(--gold) 50%, #fdf6ea 50%, #fdf6ea 100%);
+    box-shadow:0 8px 18px rgba(44,36,56,.18);
+    transform:rotate(-18deg);
+    animation:float 4s ease-in-out infinite;
+  }
+  .capsule::after{
+    content:'';
+    position:absolute;
+    top:50%; left:50%;
+    width:1px; height:22px;
+    background:rgba(44,36,56,.15);
+    transform:translate(-50%,-50%) rotate(90deg);
+  }
+  @keyframes float{
+    0%,100%{ transform:rotate(-18deg) translateY(0); }
+    50%{ transform:rotate(-14deg) translateY(-6px); }
+  }
+  .compare-coin{
+    width:26px; height:26px;
+    border-radius:50%;
+    background:linear-gradient(135deg,#e4cf9e,#c9a86a);
+    box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.5), 0 4px 10px rgba(44,36,56,.15);
+  }
+  .compare-col{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:12px;
+  }
+  .compare-col span{
+    font-size:11.5px;
+    color:var(--ink-soft);
+    letter-spacing:.02em;
+  }
+  .compare-divider{
+    width:1px; height:40px;
+    background:rgba(44,36,56,.15);
+  }
+
+  .feature-list{
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+    text-align:left;
+    margin-bottom:32px;
+  }
+  .feature-item{
+    display:flex;
+    gap:14px;
+    align-items:flex-start;
+    background:rgba(255,255,255,.5);
+    border:1px solid rgba(211,167,101,.25);
+    border-radius:16px;
+    padding:16px 18px;
+  }
+  .feature-item .num{
+    flex-shrink:0;
+    width:26px; height:26px;
+    border-radius:50%;
+    background:var(--gold);
+    color:#fff;
+    font-size:12px;
+    font-weight:700;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .feature-item p{
+    font-size:14px;
+    line-height:1.6;
+    color:var(--ink);
+  }
+
+  .solution-closing{
+    font-family:'Noto Serif KR',serif;
+    font-size:17px;
+    font-weight:600;
+    color:var(--ink);
+    line-height:1.7;
+    padding-top:6px;
+  }
+
+  /* ---------- OXYTOCIN / REVIEWS ---------- */
+  .oxytocin-section{
+    background:transparent;
+  }
+  .section-heading{
+    text-align:center;
+    margin-bottom:34px;
+  }
+  .section-heading .tag{
+    font-size:12px;
+    letter-spacing:.2em;
+    color:var(--mauve);
+    display:block;
+    margin-bottom:10px;
+  }
+  .section-heading h2{
+    font-family:'Noto Serif KR',serif;
+    font-size:22px;
+    color:var(--ink);
+    font-weight:700;
+    line-height:1.5;
+  }
+
+  .review-list{
+    display:flex;
+    flex-direction:column;
+    gap:16px;
+  }
+  .review-card-light{
+    background:#fffdf9;
+    border:1px solid rgba(185,138,146,.22);
+    border-radius:18px;
+    padding:22px 20px;
+    box-shadow:0 10px 24px rgba(44,36,56,.06);
+  }
+  .review-card-light .relation-badge{
+    display:inline-block;
+    font-size:11px;
+    font-weight:700;
+    color:#fff;
+    background:var(--mauve);
+    padding:4px 10px;
+    border-radius:999px;
+    margin-bottom:12px;
+    letter-spacing:.02em;
+  }
+  .review-card-light .stars-rating{
+    color:var(--gold);
+    font-size:13px;
+    letter-spacing:2px;
+    float:right;
+  }
+  .review-card-light p{
+    clear:both;
+    font-size:14px;
+    line-height:1.8;
+    color:var(--ink);
+  }
+  .review-card-light .author{
+    margin-top:14px;
+    font-size:12px;
+    color:var(--ink-soft);
+  }
+
+  .badge-row{
+    display:flex;
+    gap:10px;
+    justify-content:center;
+    margin-top:36px;
+    flex-wrap:wrap;
+  }
+  .badge{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    font-size:12px;
+    color:var(--ink);
+    background:rgba(211,167,101,.14);
+    border:1px solid rgba(211,167,101,.4);
+    padding:9px 14px;
+    border-radius:999px;
+    font-weight:600;
+  }
+  .badge::before{ content:'✓'; color:var(--gold); font-weight:800; }
+
+  /* ---------- URGENCY ---------- */
+  .urgency-section{
+    text-align:center;
+  }
+  .urgency-cards{
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+  }
+  .urgency-card{
+    text-align:left;
+    background:#fffaf1;
+    border:1px solid rgba(211,167,101,.4);
+    border-radius:16px;
+    padding:20px;
+    display:flex;
+    gap:14px;
+    align-items:flex-start;
+  }
+  .urgency-card .icon{
+    font-size:22px;
+    line-height:1;
+  }
+  .urgency-card h3{
+    font-size:15px;
+    color:var(--ink);
+    margin-bottom:6px;
+  }
+  .urgency-card p{
+    font-size:13px;
+    color:var(--ink-soft);
+    line-height:1.6;
+  }
+
+  /* ---------- CTA ---------- */
+  .cta-section{
+    text-align:center;
+    padding-top:56px;
+    padding-bottom:56px;
+  }
+  .cta-section h2{
+    font-family:'Noto Serif KR',serif;
+    font-size:23px;
+    line-height:1.6;
+    color:var(--ink);
+    font-weight:700;
+    margin-bottom:30px;
+  }
+  .cta-button{
+    display:inline-block;
+    width:100%;
+    max-width:340px;
+    padding:19px 20px;
+    border-radius:999px;
+    background:linear-gradient(135deg, #dfb679, var(--gold));
+    color:#fff;
+    font-size:16px;
+    font-weight:700;
+    letter-spacing:-.01em;
+    box-shadow:0 14px 30px rgba(211,167,101,.42);
+    text-decoration:none;
+    border:none;
+    cursor:pointer;
+  }
+  .cta-note{
+    margin-top:16px;
+    font-size:12px;
+    color:var(--ink-soft);
+  }
+
+  /* ---------- FAQ ---------- */
+  .faq-section{
+    background:var(--ivory);
+    padding-bottom:70px;
+  }
+  .faq-list{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  details{
+    background:#fff;
+    border:1px solid rgba(44,36,56,.1);
+    border-radius:14px;
+    overflow:hidden;
+  }
+  summary{
+    list-style:none;
+    padding:18px 20px;
+    font-size:14px;
+    font-weight:600;
+    color:var(--ink);
+    cursor:pointer;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+  }
+  summary::-webkit-details-marker{ display:none; }
+  summary::after{
+    content:'+';
+    font-size:18px;
+    color:var(--gold);
+    flex-shrink:0;
+    transition:transform .25s ease;
+  }
+  details[open] summary::after{ transform:rotate(45deg); }
+  details p{
+    padding:0 20px 20px;
+    font-size:13.5px;
+    line-height:1.75;
+    color:var(--ink-soft);
+  }
+
+  /* ---------- FOOTER ---------- */
+  footer{
+    background:var(--ivory);
+    padding:0 24px 48px;
+    text-align:center;
+  }
+  footer .brand{
+    font-family:'Song Myung',serif;
+    font-size:15px;
+    color:var(--ink);
+    margin-bottom:14px;
+    letter-spacing:.04em;
+  }
+  footer .disclaimer{
+    font-size:10.5px;
+    line-height:1.7;
+    color:#a39a8f;
+  }
+
+  /* sticky bottom CTA */
+  .sticky-cta{
+    position:sticky;
+    bottom:0;
+    left:0; right:0;
+    z-index:20;
+    padding:12px 16px;
+    background:rgba(28,22,38,.72);
+    backdrop-filter:blur(10px);
+    border-top:1px solid rgba(211,167,101,.25);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    opacity:0;
+    transform:translateY(100%);
+    transition:opacity .4s ease, transform .4s ease;
+    pointer-events:none;
+  }
+  .sticky-cta.show{
+    opacity:1;
+    transform:translateY(0);
+    pointer-events:auto;
+  }
+  .sticky-cta a{
+    width:100%;
+    text-align:center;
+    padding:15px 20px;
+    border-radius:999px;
+    background:linear-gradient(135deg, #dfb679, var(--gold));
+    color:#fff;
+    font-size:14.5px;
+    font-weight:700;
+    text-decoration:none;
+    box-shadow:0 8px 20px rgba(211,167,101,.4);
+  }
+</style>
+</head>
+<body>
+<div class="frame" id="frame">
+
+  <!-- 1. HERO -->
+  <section class="hero">
+    <div class="stars"></div>
+    <span class="eyebrow">Plant-based Melatonin 2mg</span>
+    <div class="moon-wrap"><div class="moon"></div></div>
+    <h1 class="serif reveal in">
+      잠이 안 오는 게 아니라,<br>
+      <span class="accent">잠들 준비가</span> 안 된 겁니다
+    </h1>
+    <p class="sub reveal in">당신 잘못이 아닙니다</p>
+    <p class="scroll-hint">SCROLL</p>
+  </section>
+
+  <!-- 2. TOP KILLING REVIEW -->
+  <section class="review-top">
+    <div class="review-card reveal">
+      <div class="quote-mark">“</div>
+      <p>
+        엄마가 갱년기 오고 나서 3년을 새벽마다 깨셨는데, 이거 사드리고부터 전화하면 목소리가 다르더라고요.
+        어제도 “오늘은 안 깼다”고 먼저 전화 오셨어요. 효도템이라고 해서 처음엔 그냥 그런가 했는데, 진짜였네요 ㅋㅋ
+      </p>
+      <div class="author">구매자 김OO 님 · 부모님께 선물</div>
+    </div>
+  </section>
+
+  <!-- 3. AM 3:00 / 노르에피네프린 -->
+  <section class="am-section">
+    <div class="am-time reveal">
+      <span>그 시각, 잠들지 못하는 이유</span>
+      AM 3:00
+    </div>
+    <p class="lead reveal">
+      눈이 말똥말똥한데<br>옆에서는 가족이 곤히 자고 있는 그 기분.
+    </p>
+    <div class="divider-line"></div>
+    <p class="body-text reveal">
+      갱년기 여성 10명 중 6명이 겪는다는 수면 장애,<br>
+      그런데 정작 ‘왜 그런지’ 아는 사람은 많지 않습니다.
+    </p>
+    <p class="body-text reveal" style="margin-top:16px;">
+      나이가 들면서 몸 안의 멜라토닌 분비량은<br>자연스럽게 줄어듭니다.
+    </p>
+    <div class="stat-pill reveal">
+      <b>10명 중 6명</b>&nbsp;갱년기 여성이 겪는 수면 장애
+    </div>
+    <p class="body-text reveal" style="margin-top:30px; font-weight:600; color:var(--cream-text);">
+      잠이 안 오는 게 아니라,<br>잠들게 해주던 신호가 줄어든 것뿐입니다.
+    </p>
+  </section>
+
+  <!-- 4. 코르티솔 -->
+  <section class="cortisol-section">
+    <span class="tag reveal">그대로 두면</span>
+    <p class="reveal">수면 부족이 오래 방치되면 컨디션 저하, 집중력 저하로 이어지기 쉽습니다.</p>
+    <p class="reveal">
+      억지로 참거나, 매번 화학 수면제에 의존하는 대신<br>
+      몸이 원래 가지고 있던 리듬을 채워주는 방법도 있습니다.
+    </p>
+  </section>
+
+  <!-- 5. 솔루션 -->
+  <section class="solution-section">
+    <p class="solution-title reveal">THE SOLUTION</p>
+    <h2 class="reveal">식물성 멜라토닌 2mg</h2>
+
+    <div class="capsule-stage reveal">
+      <div class="compare-col">
+        <div class="capsule"></div>
+        <span>2mg 캡슐</span>
+      </div>
+      <div class="compare-divider"></div>
+      <div class="compare-col">
+        <div class="compare-coin"></div>
+        <span>10원 동전 크기</span>
+      </div>
+    </div>
+
+    <div class="feature-list">
+      <div class="feature-item reveal">
+        <div class="num">1</div>
+        <p>목 넘김 부담 없는 작은 사이즈</p>
+      </div>
+      <div class="feature-item reveal">
+        <div class="num">2</div>
+        <p>식품의약품안전처 권장 함량 기준 설계</p>
+      </div>
+      <div class="feature-item reveal">
+        <div class="num">3</div>
+        <p>화학 합성이 아닌 식물성 원료</p>
+      </div>
+    </div>
+
+    <p class="solution-closing reveal">
+      챙길 건 자기 30분 전, 딱 1정.<br>그게 전부입니다.
+    </p>
+  </section>
+
+  <!-- 6. 옥시토신 / 리뷰 3개 -->
+  <section class="oxytocin-section">
+    <div class="section-heading reveal">
+      <span class="tag">REAL STORIES</span>
+      <h2>같이 잠들게 된 사람들의 이야기</h2>
+    </div>
+
+    <div class="review-list">
+      <div class="review-card-light reveal">
+        <span class="relation-badge">배우자</span>
+        <span class="stars-rating">★★★★★</span>
+        <p>
+          신랑이 코골이도 심하고 자다가 몇 번씩 뒤척이길래 반신반의로 챙겨줬는데,
+          요즘은 제가 먼저 잠드는 날이 더 많아요. 저러다 저보다 더 잘 자면 억울할 것 같은데 ㅋㅋ
+        </p>
+        <div class="author">박OO 님</div>
+      </div>
+
+      <div class="review-card-light reveal">
+        <span class="relation-badge">부모-자녀</span>
+        <span class="stars-rating">★★★★★</span>
+        <p>
+          시험 기간에 잠을 못 자던 딸 대신 저희 부부가 먼저 먹어봤어요.
+          며칠 지나니 남편이 알람 없이 눈이 떠지더라고요. 딸한테는 아직 얘기 안 했는데 곧 뺏길 것 같습니다.
+        </p>
+        <div class="author">이OO 님</div>
+      </div>
+
+      <div class="review-card-light reveal">
+        <span class="relation-badge">본인</span>
+        <span class="stars-rating">★★★★★</span>
+        <p>
+          요가원 원장인데 매번 회원분들한테 “숙면이 중요해요” 하면서 정작 저는 새벽마다 깨는 사람이었어요.
+          이거 먹고 나서 처음으로 회원분한테 “저도 요즘 잘 자요”라고 말할 수 있게 됐네요.
+        </p>
+        <div class="author">정OO 님</div>
+      </div>
+    </div>
+
+    <div class="badge-row reveal">
+      <span class="badge">2mg 권장 함량</span>
+      <span class="badge">식물성 원료 기반</span>
+      <span class="badge">국내 제조 인증</span>
+    </div>
+  </section>
+
+  <!-- 7. 긴급성 -->
+  <section class="urgency-section">
+    <div class="section-heading reveal">
+      <h2>지금 시작하기 좋은 이유</h2>
+    </div>
+    <div class="urgency-cards">
+      <div class="urgency-card reveal">
+        <div class="icon">🌙</div>
+        <div>
+          <h3>첫 구매 한정 특가</h3>
+          <p>오늘 주문 시 적용되는 첫 구매가로 부담 없이 시작해 보세요.</p>
+        </div>
+      </div>
+      <div class="urgency-card reveal">
+        <div class="icon">🌤️</div>
+        <div>
+          <h3>2주 체험 후 100% 환불</h3>
+          <p>안 맞으면 부담 없이 환불받으실 수 있습니다.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8. CTA -->
+  <section class="cta-section">
+    <h2 class="reveal">오늘 밤부터,<br>새벽에 깨지 않는 잠 시작하기</h2>
+    <a href="#" class="cta-button reveal">오늘 밤부터 달라지는 수면 시작하기</a>
+    <p class="cta-note">2주 체험 후 100% 환불 · 오늘 주문 시 첫 구매가 적용</p>
+  </section>
+
+  <!-- 9. FAQ -->
+  <section class="faq-section">
+    <div class="section-heading reveal">
+      <span class="tag" style="color:var(--gold);">FAQ</span>
+      <h2>자주 묻는 질문</h2>
+    </div>
+    <div class="faq-list">
+      <details class="reveal">
+        <summary>계속 먹으면 내성 생기지 않나요?</summary>
+        <p>매일 같은 용량으로 설계되어 있어, 임의로 늘려야 할 필요 없이 꾸준히 섭취하시면 됩니다.</p>
+      </details>
+      <details class="reveal">
+        <summary>화학 성분 아닌가요?</summary>
+        <p>식물성 원료 기반으로, 안 먹으면 불안해지는 합성 성분이 아닙니다.</p>
+      </details>
+      <details class="reveal">
+        <summary>효과가 없으면 어떡하죠?</summary>
+        <p>2주 체험 후 만족스럽지 않으면 100% 환불해 드립니다.</p>
+      </details>
+    </div>
+  </section>
+
+  <footer>
+    <div class="brand display">MOONFALL</div>
+    <p class="disclaimer">
+      본 제품은 건강기능식품이며, 질병의 예방 및 치료를 목적으로 하는 의약품이 아닙니다.<br>
+      개인의 체질에 따라 효과가 다를 수 있으며, 이상 반응이 느껴질 경우 섭취를 중단하고 전문가와 상담하시기 바랍니다.
+    </p>
+  </footer>
+
+  <div class="sticky-cta" id="stickyCta">
+    <a href="#">오늘 밤부터 달라지는 수면 시작하기</a>
+  </div>
+
+</div>
+
+<script>
+  var reveals = document.querySelectorAll('.reveal');
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting){
+        e.target.classList.add('in');
+        io.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.15 });
+  reveals.forEach(function(el){ io.observe(el); });
+
+  var hero = document.querySelector('.hero');
+  var sticky = document.getElementById('stickyCta');
+  var stickyIo = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      sticky.classList.toggle('show', !e.isIntersecting);
+    });
+  }, { threshold: 0 });
+  stickyIo.observe(hero);
+</script>
+
+</body>
+</html>
