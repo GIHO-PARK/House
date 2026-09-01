@@ -13,7 +13,7 @@
  "QQQU": "Direxion Daily Magnificent 7 Bull 2X Shares",
  "OKLL": "Defiance Daily Target 2X Long OKLO ETF",
  "MSTX": "Defiance Daily Target 2X Long MSTR ETF",
- "IRE": "Defiance Daily Target 2X Long I",
+ "IRE": "Defiance Daily Target 2X Long IREN ETF",
  "NVDL": "GraniteShares 2x Long NVDA Daily ETF",
  "CONL": "GraniteShares 2x Long COIN Daily ETF",
  "NOWL": "GraniteShares 2x Long NOW Daily",
@@ -43,5 +43,9 @@
  "SPAL": "GraniteShares 2x Long SpaceX Da",
  "LACG": "Leverage Shares 2X Long LAC Daily ETF",
  "AMA": "Defiance Daily Target 2X Long AMAT ETF",
- "ONDL": "Defiance Daily Target 2X Long ONDS ETF"
+ "ONDL": "Defiance Daily Target 2X Long ONDS ETF",
+ "WYFL": "Defiance Daily Target 2X Long W",
+ "RDTL": "GraniteShares 2x Long RDDT Daily ETF",
+ "USGG": "Leverage Shares 2X Long USAR Daily ETF",
+ "NETG": "Leverage Shares 2X Long NET Daily ETF"
 }

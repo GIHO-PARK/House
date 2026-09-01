@@ -228,6 +228,8 @@ def fetch_fx():
 
 
 def main():
+    json_mode = "--json" in sys.argv[1:]
+
     # 0) 환율 + 신규 레버리지 ETF 발굴 + 캐시 병합
     fx, fx_ok = fetch_fx()
     trade_budget_krw = CAPITAL_KRW * TRADE_RATIO
@@ -295,7 +297,10 @@ def main():
         time.sleep(0.2)
 
     if not lev_rows and not stk_rows:
-        print("⚠️ 전 종목 조회 실패 — 네트워크/야후 문제. 잠시 후 재시도하세요.")
+        if json_mode:
+            print(json.dumps({"ok": False, "error": "fetch_failed"}, ensure_ascii=False))
+        else:
+            print("⚠️ 전 종목 조회 실패 — 네트워크/야후 문제. 잠시 후 재시도하세요.")
         return
 
     all_ts = [r["last_ts"] for r in lev_rows + stk_rows]
@@ -311,15 +316,21 @@ def main():
             sec_mom.append((sum(vals) / len(vals), sec, names))
     sec_mom.sort(reverse=True)
 
-    def est_wp(r, target):
+    def est_wp_value(r, target):
         if r["wp_px"] is None or target is None:
+            return None
+        drop = target / r["close"] - 1
+        return r["wp_px"] * (1 + r["beta"] * drop)
+
+    def est_wp(r, target):
+        val = est_wp_value(r, target)
+        if val is None:
             return "-"
         drop = target / r["close"] - 1
-        val = r["wp_px"] * (1 + r["beta"] * drop)
         tag = " *참고치" if drop < -0.25 else ""
         return f"≈{val:,.2f}${tag}"
 
-    todo, holding, near, waiting, idle = [], [], [], [], []
+    todo, holding, near, waiting, idle, entries = [], [], [], [], [], []
     n_open = 0
 
     def classify(r, is_stk):
@@ -382,6 +393,24 @@ def main():
                      f"**{fp(target)}$** | D-{hold} (0/{hold}, 오늘 진입 기준) | {nx} | "
                      f"{fp(amt)}$(약 {fkrw(amt * fx)}) |")
                 holding.append(x)
+                entry_action = {
+                    "sym": sym,
+                    "is_stk": is_stk,
+                    "stage": st,
+                    "entry_price_usd": round(entry, 4),
+                    "target_price_usd": round(target, 4),
+                    "amount_usd": round(amt, 2),
+                    "hold_limit_days": hold,
+                }
+                if is_stk:
+                    wp_amt = wp_cap_usd * weight
+                    wp_px = est_wp_value(r, entry)
+                    entry_action["weekly_pay"] = {
+                        "sym": r["wp"],
+                        "amount_usd": round(wp_amt, 2),
+                        "est_price_usd": round(wp_px, 4) if wp_px is not None else None,
+                    }
+                entries.append(entry_action)
             else:
                 avg = r["avg"]
                 pnl = (c / avg - 1) * 100
@@ -412,6 +441,24 @@ def main():
         classify(r, True)
     for r in sorted(lev_rows, key=lambda x: -x["adv"]):
         classify(r, False)
+
+    if json_mode:
+        payload = {
+            "ok": True,
+            "generated_at": now.isoformat(),
+            "data_date": data_date,
+            "stale": stale,
+            "new_investor_mode": NEW_INVESTOR_MODE,
+            "fx_krw_per_usd": fx,
+            "fx_ok": fx_ok,
+            "capital_krw": CAPITAL_KRW,
+            "trade_ratio": TRADE_RATIO,
+            "max_concurrent": MAX_CONCURRENT,
+            "n_open": n_open,
+            "entries": entries,
+        }
+        print(json.dumps(payload, ensure_ascii=False))
+        return
 
     out = [f"# 📊 RN존 듀얼전략 리포트 ({today} / 미국 {data_date} 기준)"]
     if stale:

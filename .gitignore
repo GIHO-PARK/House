@@ -1,0 +1,11 @@
+# 키움 자동매매 실행기의 런타임 상태/로그 — 계좌 활동 정보가 담기므로 커밋하지 않는다.
+claude-skills/rnzone-kiwoom-autotrade/scripts/order_log.jsonl
+claude-skills/rnzone-kiwoom-autotrade/scripts/executed_signals.json
+claude-skills/rnzone-kiwoom-autotrade/scripts/exchange_cache.json
+
+# 자격 증명을 담을 수 있는 .env 계열 파일
+.env
+*.env.local
+
+__pycache__/
+*.pyc
