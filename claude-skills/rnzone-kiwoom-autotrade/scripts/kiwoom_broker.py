@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import json
 import math
+import time
 from pathlib import Path
 
 from kiwoom import KiwoomError, get_client
@@ -24,6 +25,10 @@ from kiwoom.core.errors import APIError
 # 알아야 하므로, 세 거래소를 순서대로 시도해 처음 성공하는 곳을 사용한다.
 EXCHANGE_CANDIDATES = ("ND", "NY", "NA")
 _EXCHANGE_CACHE_PATH = Path(__file__).with_name("exchange_cache.json")
+
+# 키움 REST API는 API ID별로 초당 요청 수를 제한한다(예: usa10100 = 초당 5회).
+# 종목별 연속 호출(거래소 확인·주문가능수량 등) 사이에 짧게 대기해 429(1700)를 피한다.
+REQUEST_DELAY_SECONDS = 0.25
 
 
 def _load_exchange_cache() -> dict:
@@ -52,7 +57,9 @@ def resolve_exchange(stk_cd: str) -> str:
 
     client = get_client()
     last_error: Exception | None = None
-    for stex_tp in EXCHANGE_CANDIDATES:
+    for i, stex_tp in enumerate(EXCHANGE_CANDIDATES):
+        if i > 0:
+            time.sleep(REQUEST_DELAY_SECONDS)
         try:
             response = client.fetch_page(
                 api_id="usa10100",

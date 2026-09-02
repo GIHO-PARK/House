@@ -139,6 +139,7 @@ def execute(payload: dict, *, live: bool, max_order_usd: float | None) -> None:
             if key in state:
                 print(f"  - {sym}: 이미 처리됨({state[key]}) — 건너뜀")
                 continue
+            time.sleep(broker.REQUEST_DELAY_SECONDS)
             try:
                 plan = plan_order(sym, amount_usd, price, max_order_usd)
             except KiwoomError as exc:
