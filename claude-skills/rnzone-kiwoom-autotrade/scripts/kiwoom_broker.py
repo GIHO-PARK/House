@@ -116,6 +116,15 @@ def get_deposit_usd() -> float | None:
     return None
 
 
+def format_order_price(price: float) -> str:
+    """키움 미국주식 주문/정정 단가 형식: $1 미만은 소수점 4자리, $1 이상은
+    소수점 2자리까지만 허용된다(그 이상을 보내면 return_code 1517로 거부됨).
+    조회 API(ust31490 등)에는 이 제약이 없다 — 주문/정정/취소에만 적용."""
+    if price < 1:
+        return f"{price:.4f}"
+    return f"{price:.2f}"
+
+
 def place_limit_buy(stk_cd: str, stex_tp: str, qty: int, price: float) -> dict:
     """ust20000 — 미국주식 매수 주문(지정가 전용, trde_tp=00).
 
@@ -133,7 +142,7 @@ def place_limit_buy(stk_cd: str, stex_tp: str, qty: int, price: float) -> dict:
             "stk_cd": stk_cd,
             "ord_qty": str(qty),
             "trde_tp": "00",
-            "ord_uv": f"{price:.4f}",
+            "ord_uv": format_order_price(price),
         },
     )
     return response.body
