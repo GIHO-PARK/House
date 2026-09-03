@@ -62,3 +62,16 @@ python3 kiwoom_autotrade.py --live
 바꾸려면 rnzone-report 스킬의 `CAPITAL_KRW`/`TRADE_RATIO`를 수정한다(사용자에게
 반드시 확인 후). 주문 1건 상한은 `KIWOOM_MAX_ORDER_USD` 환경변수 또는
 `--max-order-usd`로 조정한다.
+
+## 매일 무인 자동 실행 (선택)
+
+사용자가 사람 개입 없이 매일 자동으로 실주문까지 나가길 원하면
+[references/daily-automation.md](references/daily-automation.md)를 따라
+`run_daily.bat` + Windows 작업 스케줄러로 등록한다. 전제 조건:
+
+- **IP가 고정된 환경에서만** 등록한다 — 키움 REST API는 App Key에 등록된 IP에서만
+  인증이 통과된다. 매번 IP가 바뀌는 클라우드 세션에서는 무인 스케줄을 걸지 않는다.
+- 등록 전에 **반드시 dry-run과 최소 1회 이상의 실주문을 사람이 직접 확인**한
+  상태여야 한다. 검증 안 된 상태로 무인 스케줄 등록을 돕지 말 것.
+- 등록 시 주문 1건 상한(`--max-order-usd`)을 반드시 사용자에게 확인해서 명시한다
+  — 상한 없이 무인으로 돌리자고 하면 상한을 걸도록 권한다.
