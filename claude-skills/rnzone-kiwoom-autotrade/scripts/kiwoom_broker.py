@@ -79,14 +79,21 @@ def resolve_exchange(stk_cd: str) -> str:
 
 
 def get_orderable_quantity(stk_cd: str, stex_tp: str, price: float) -> int | None:
-    """ust31490 — 해당 가격 기준 실제 주문 가능 수량(증거금 100% 기준)."""
+    """ust31490 — 해당 가격 기준 실제 주문 가능 수량.
+
+    ``ord_alowq_100``/``ord_alowq_50``은 종목이 속한 증거금율 구간(100%/50%)에
+    맞는 필드만 값이 채워지고 나머지는 0으로 내려온다 — 종목마다 어느 구간인지
+    다르므로 하나만 읽으면 자금이 있어도 0으로 오판할 수 있다. 이 자동매매는
+    신용(미수)을 절대 쓰지 않으므로, 증거금 구간과 무관하게 항상 유효한
+    ``min_ord_alowq``(미수불가/현금 기준 주문가능수량)를 사용한다.
+    """
     client = get_client()
     response = client.fetch_page(
         api_id="ust31490",
         path="/api/us/ordr",
         body={"stk_cd": stk_cd, "uv": f"{price:.4f}", "stex_tp": stex_tp},
     )
-    raw = response.body.get("ord_alowq_100")
+    raw = response.body.get("min_ord_alowq")
     if raw in (None, ""):
         return None
     try:
