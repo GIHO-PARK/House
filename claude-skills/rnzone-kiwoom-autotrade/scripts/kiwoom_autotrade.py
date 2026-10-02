@@ -46,12 +46,15 @@ def fetch_signals(timeout: int = 180) -> dict:
             "rnzone-report 스킬과 이 스킬이 같은 상위 폴더(claude-skills/ 또는 ~/.claude/skills/)에 "
             "나란히 있어야 합니다."
         )
+    print("[1/2] 오늘의 신호 계산 중 (rnzone_report.py 실행, 야후 파이낸스 조회로 1~2분 소요)...", flush=True)
+    t0 = time.monotonic()
     result = subprocess.run(
         [sys.executable, str(RNZONE_SCRIPT), "--json"],
         capture_output=True,
         text=True,
         timeout=timeout,
     )
+    print(f"[1/2] 신호 계산 완료 ({time.monotonic() - t0:.1f}초)", flush=True)
     if result.returncode != 0:
         raise SystemExit(f"rnzone_report.py 실행 실패:\n{result.stderr}")
     try:
@@ -121,10 +124,11 @@ def execute(payload: dict, *, live: bool, max_order_usd: float | None) -> None:
     state = _load_state()
     entries = payload.get("entries", [])
 
-    print(f"=== RN존 → 키움 자동매매 실행 계획 ({data_date}, {'🔴 LIVE' if live else '🟡 DRY-RUN'}) ===")
+    print(f"=== RN존 → 키움 자동매매 실행 계획 ({data_date}, {'🔴 LIVE' if live else '🟡 DRY-RUN'}) ===", flush=True)
     if not entries:
         print("오늘 신규 진입 신호가 없습니다. 실행할 주문이 없습니다.")
         return
+    print(f"[2/2] 키움 API 처리 시작 ({len(entries)}개 신호)", flush=True)
 
     for entry in entries:
         legs = [(entry["sym"], entry["amount_usd"], entry["entry_price_usd"], entry["stage"], False)]
@@ -140,10 +144,11 @@ def execute(payload: dict, *, live: bool, max_order_usd: float | None) -> None:
                 print(f"  - {sym}: 이미 처리됨({state[key]}) — 건너뜀")
                 continue
             time.sleep(broker.REQUEST_DELAY_SECONDS)
+            print(f"  ... {sym} 처리 중 (거래소 확인 → 주문가능수량 조회)", flush=True)
             try:
                 plan = plan_order(sym, amount_usd, price, max_order_usd)
             except KiwoomError as exc:
-                print(f"  ✗ {sym}: 주문 계획 실패 — {exc}")
+                print(f"  ✗ {sym}: 주문 계획 실패 — {exc}", flush=True)
                 _log({"sym": sym, "stage": stage, "status": "plan_failed", "error": str(exc), "live": live})
                 continue
 
@@ -151,11 +156,12 @@ def execute(payload: dict, *, live: bool, max_order_usd: float | None) -> None:
             kind = "주배당 적립" if is_wp else "트레이딩 진입"
             print(
                 f"  - [{kind}] {sym} [{plan['exchange']}] 지정가 {plan['price']}$ x {plan['qty']}주 "
-                f"(예산 ${plan['planned_amount_usd']}){note}"
+                f"(예산 ${plan['planned_amount_usd']}){note}",
+                flush=True,
             )
 
             if plan["qty"] < 1:
-                print("    → 수량 0, 주문하지 않음")
+                print("    → 수량 0, 주문하지 않음", flush=True)
                 _log({**plan, "stage": stage, "status": "skipped_zero_qty", "live": live})
                 continue
 
@@ -163,15 +169,16 @@ def execute(payload: dict, *, live: bool, max_order_usd: float | None) -> None:
                 _log({**plan, "stage": stage, "status": "dry_run", "live": False})
                 continue
 
+            print(f"    ... {sym} 실주문 전송 중", flush=True)
             try:
                 response = broker.place_limit_buy(sym, plan["exchange"], plan["qty"], plan["price"])
             except KiwoomError as exc:
-                print(f"    ✗ 주문 실패: {exc}")
+                print(f"    ✗ 주문 실패: {exc}", flush=True)
                 _log({**plan, "stage": stage, "status": "order_failed", "error": str(exc), "live": True})
                 continue
 
             order_no = response.get("ord_no")
-            print(f"    ✓ 주문 접수: 주문번호 {order_no}")
+            print(f"    ✓ 주문 접수: 주문번호 {order_no}", flush=True)
             _log({**plan, "stage": stage, "status": "order_placed", "order_no": order_no, "live": True,
                   "response": response})
             state[key] = datetime.now(timezone.utc).isoformat()

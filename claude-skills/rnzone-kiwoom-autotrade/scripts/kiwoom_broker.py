@@ -55,11 +55,13 @@ def resolve_exchange(stk_cd: str) -> str:
     if stk_cd in cache:
         return cache[stk_cd]
 
+    print(f"      [거래소 확인] {stk_cd}: 캐시 없음, usa10100 조회 시작", flush=True)
     client = get_client()
     last_error: Exception | None = None
     for i, stex_tp in enumerate(EXCHANGE_CANDIDATES):
         if i > 0:
             time.sleep(REQUEST_DELAY_SECONDS)
+        print(f"      [거래소 확인] {stk_cd}: {stex_tp} 시도", flush=True)
         try:
             response = client.fetch_page(
                 api_id="usa10100",
@@ -87,12 +89,14 @@ def get_orderable_quantity(stk_cd: str, stex_tp: str, price: float) -> int | Non
     신용(미수)을 절대 쓰지 않으므로, 증거금 구간과 무관하게 항상 유효한
     ``min_ord_alowq``(미수불가/현금 기준 주문가능수량)를 사용한다.
     """
+    print(f"      [주문가능수량] {stk_cd}: ust31490 조회 시작", flush=True)
     client = get_client()
     response = client.fetch_page(
         api_id="ust31490",
         path="/api/us/ordr",
         body={"stk_cd": stk_cd, "uv": f"{price:.4f}", "stex_tp": stex_tp},
     )
+    print(f"      [주문가능수량] {stk_cd}: 조회 완료", flush=True)
     raw = response.body.get("min_ord_alowq")
     if raw in (None, ""):
         return None
@@ -133,6 +137,7 @@ def place_limit_buy(stk_cd: str, stex_tp: str, qty: int, price: float) -> dict:
     """
     if qty < 1:
         raise ValueError("qty는 1 이상이어야 합니다.")
+    print(f"      [주문 전송] {stk_cd}: ust20000 호출 시작", flush=True)
     client = get_client()
     response = client.fetch_page(
         api_id="ust20000",
@@ -145,6 +150,7 @@ def place_limit_buy(stk_cd: str, stex_tp: str, qty: int, price: float) -> dict:
             "ord_uv": format_order_price(price),
         },
     )
+    print(f"      [주문 전송] {stk_cd}: 응답 수신", flush=True)
     return response.body
 
 
