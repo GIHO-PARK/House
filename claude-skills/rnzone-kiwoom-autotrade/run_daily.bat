@@ -26,7 +26,10 @@ REM Per-order cap in USD. Override with KIWOOM_MAX_ORDER_USD in .env.
 REM Default 7000 covers the largest planned order (index 3rd tranche, 9,000,000 KRW).
 if not defined KIWOOM_MAX_ORDER_USD set KIWOOM_MAX_ORDER_USD=7000
 
-python scripts\kiwoom_autotrade.py --live >> "%LOGFILE%" 2>&1
+set PYEXE=python
+if exist ".venv\Scripts\python.exe" set PYEXE=.venv\Scripts\python.exe
+
+"%PYEXE%" scripts\kiwoom_autotrade.py --live >> "%LOGFILE%" 2>&1
 
 echo ===== %date% %time% run finished (exit=%errorlevel%) ===== >> "%LOGFILE%"
 

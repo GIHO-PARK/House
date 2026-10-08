@@ -379,8 +379,23 @@ def main() -> None:
 
     payload = (json.loads(Path(args.payload_json).read_text(encoding="utf-8"))
                if args.payload_json else fetch_signals())
-    account = (json.loads(Path(args.account_json).read_text(encoding="utf-8"))
-               if args.account_json else read_account())
+    if args.account_json:
+        account = json.loads(Path(args.account_json).read_text(encoding="utf-8"))
+    else:
+        try:
+            account = read_account()
+        except Exception as exc:  # noqa: BLE001 — 원인별 안내만 하고 종료
+            msg = str(exc)
+            print(f"\n⚠️ 키움 계좌 조회 실패: {msg}", flush=True)
+            if "8001" in msg or "앱키" in msg:
+                print("→ App Key/Secret을 확인하세요(운영 키인지, 오타 없는지). 프로그램의 '설정'에서 다시 저장할 수 있습니다.")
+            elif "IP" in msg.upper():
+                print("→ 이 PC의 공인 IP가 키움 포털(openapi.kiwoom.com)에 등록돼 있는지 확인하세요. "
+                      "집 인터넷 IP가 바뀌면 다시 등록해야 합니다.")
+            elif isinstance(exc, ModuleNotFoundError):
+                print("→ 키움 패키지가 없습니다. install.bat 을 다시 실행하세요.")
+            log_event({"type": "account_read", "status": "failed", "error": msg})
+            raise SystemExit(2)
     state = load_state()
     result = build_actions(payload, account, state, max_order_usd)
 

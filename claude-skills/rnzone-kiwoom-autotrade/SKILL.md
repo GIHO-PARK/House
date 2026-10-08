@@ -13,6 +13,13 @@ rnzone_report.py를 그대로 호출한다 — 리포트에서 사람이 읽는 
 레버리지 슬롯 1,800만원(1차/2차/3차 300/600/900만) · 본주 슬롯 1,200만원(200/400/600만)
 · 주배당 종목당 150만원 · 동시 보유 7종목 · 반도체·기술 계열 2종목 · 단일종목 레버리지 제외.
 
+## 프로그램으로 쓰기 (Windows, 권장)
+
+`install.bat` 더블클릭 → 바탕화면 "RNZone AutoTrade" 창 프로그램(`RNZoneTrader.pyw`)이 생긴다.
+설정(App Key/Secret·주문 상한) → 주문 계획 보기(dry-run) → 지금 실주문 실행 → 자동실행 켜기(월~금 23:45,
+절전 해제) 순서로 쓴다. 상세: [references/daily-automation.md](references/daily-automation.md).
+사용자가 "프로그램으로", "설치", "바탕화면", "버튼" 등을 말하면 이 방법을 안내한다.
+
 ## 사용 전 준비 (한 번만)
 
 [references/setup.md](references/setup.md) 참고 — Python 3.13+, `pip install
