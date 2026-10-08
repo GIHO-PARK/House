@@ -51,7 +51,19 @@ LOG_PATH = SCRIPT_DIR / "order_log.jsonl"
 TIMEOUT_SELL_DISCOUNT = 0.03   # 기간청산은 직전 종가보다 3% 낮은 지정가(사실상 즉시 체결)
 WP_BUY_PREMIUM = 0.01          # 주배당 ETF는 직전 종가 +1% 지정가로 적립
 CIRCUIT_BREAKER = -0.30        # 트레이딩 평가손이 운용금의 -30% 이하면 신규 1차 진입 중단
-PRICE_TOL = 0.005              # 같은 가격 주문으로 볼 허용 오차($)
+PRICE_TOL = 0.005
+# 키움 주문 거부 중 계좌 쪽 준비가 빠진 경우 — 사람이 할 일을 한 번만 안내한다
+ORDER_HINTS = [
+    (("509251", "투자자정보확인서"),
+     "레버리지 ETF는 투자자정보확인서(투자성향 진단) 등록이 필요합니다. 영웅문/키움 앱에서 "
+     "'투자자정보확인서'를 등록하세요. 등록 후 다음 실행부터 자동으로 다시 주문합니다."),
+    (("사전교육", "교육이수", "교육 이수"),
+     "레버리지 ETP 사전교육 이수번호를 영웅문4 [7164] 또는 영웅문S#에서 등록하세요."),
+    (("기본예탁금",),
+     "레버리지 ETP 기본예탁금 조건에 걸렸습니다. 계좌 현금(예수금)과 레버리지 단계를 키움에서 확인하세요."),
+    (("부적합", "적합성"),
+     "투자성향에 비해 위험한 상품이라 거부됐습니다. 투자자정보확인서의 투자성향을 확인하세요."),
+]              # 같은 가격 주문으로 볼 허용 오차($)
 
 
 # ── 장부 ─────────────────────────────────────────────────
@@ -320,6 +332,7 @@ def read_account() -> dict:
 def execute(actions: list, *, live: bool) -> list:
     """주문 목록을 제출한다. 실패한 매수 종목 목록을 돌려준다(장부에서 대기 해제용)."""
     failed = []
+    hints_shown: set = set()
     broker = None
     if live:
         import kiwoom_broker as broker
@@ -359,6 +372,10 @@ def execute(actions: list, *, live: bool) -> list:
         except (KiwoomError, ValueError) as exc:
             print(f"  ✗ {label} — {exc}", flush=True)
             log_event({**a, "status": "failed", "error": str(exc)})
+            hint = next((h for keys, h in ORDER_HINTS if any(k in str(exc) for k in keys)), None)
+            if hint and hint not in hints_shown:
+                hints_shown.add(hint)
+                print(f"    → {hint}", flush=True)
             if a["type"] == "buy":
                 failed.append(a["sym"])
         time.sleep(0.3)
