@@ -1,6 +1,7 @@
 # 키움 자동매매 실행기의 런타임 상태/로그 — 계좌 활동 정보가 담기므로 커밋하지 않는다.
 claude-skills/rnzone-kiwoom-autotrade/scripts/order_log.jsonl
 claude-skills/rnzone-kiwoom-autotrade/scripts/executed_signals.json
+claude-skills/rnzone-kiwoom-autotrade/scripts/positions.json
 claude-skills/rnzone-kiwoom-autotrade/scripts/exchange_cache.json
 claude-skills/rnzone-kiwoom-autotrade/daily_run.log
 

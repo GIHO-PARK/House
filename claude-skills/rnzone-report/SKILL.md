@@ -27,7 +27,7 @@ python scripts/rnzone_report.py
 
 | 섹션 | 의미 |
 |---|---|
-| 💰 자본 배분 | 총 자본(CAPITAL_KRW, 기본 5,000만원)을 트레이딩:주배당 = TRADE_RATIO 비율(기본 70:30)로 나누고, 트레이딩은 7슬롯 균등 → 슬롯당 금액을 1:2:3 비중으로 분할, 주배당은 듀얼코어 6종목 균등 → 종목당 상한. 환율은 야후 KRW=X 실시간 조회 |
+| 💰 자본 배분 | 총 자본(CAPITAL_KRW, 현재 32,267,600원)에서 비상금(RESERVE_KRW, 1,000만원)을 빼고 운용. 종목 유형별 슬롯(SLOT_KRW: 지수·섹터 레버리지 1,800만원 / 본주 1,200만원)을 1:2:3으로 나눠 1·2·3차 주문금액을 정하고, 주배당은 종목당 상한(WP_CAP_KRW, 150만원). 동시 보유 7종목, 반도체·기술 계열 2종목(GROUPS/MAX_PER_GROUP). 환율은 야후 KRW=X 실시간 조회 |
 | 📌 오늘 할 일 | 직전 거래일 신규 신호. 매수 지시엔 목표가·기간한도·진입금액($/원) 동봉, 본주 신호엔 주배당 적립 지시 동반 |
 | 🆕 신규 진입 대상 | (NEW_INVESTOR_MODE=True 기본값, 실보유 없는 사용자 기준) 이미 차수가 성립된 종목을 **오늘 종가를 진입가**로 삼아 오늘 일괄 진입 시 목표가·기간청산을 재계산. 과거 평단 기반 손익/매도·본절·기간청산 청산 안내는 표시 안 함. 실제 보유분을 추적하려면 스크립트 상단 `NEW_INVESTOR_MODE = False`로 바꾸면 기존 '💼 보유 중'(평단·손익·본절가) 표시로 전환 |
 | 💰 주배당 적립 | 이번 주 분배금 재투자 대상 섹터(60일 모멘텀 1위) |
@@ -49,7 +49,7 @@ RN존 = 1~2,000$의 고정 라운드넘버 20개 선. 상단선 4% 이내 터치
 
 ## 커스터마이징
 
-`scripts/rnzone_report.py` 상단 상수: TOUCH/BUYZ/SELL, HOLD_LEV(42)/HOLD_STK(63), LIQ_MIN(유니버스 기준), LEVS(레버리지 후보), DUAL(듀얼코어), SECTORS(섹터 구분), NEW_INVESTOR_MODE(신규 진입 재계산 여부, 기본 True), CAPITAL_KRW(총 자본, 기본 5,000만원), TRADE_RATIO(트레이딩:주배당 배분 비율, 기본 0.7). 종목 추가 시 야후 티커 규칙(BRK.B→BRK-B) 주의. 사용자가 자본금이나 배분 비율을 바꾸면 CAPITAL_KRW/TRADE_RATIO를 수정할 것 — 임의로 가정하지 말고 반드시 사용자에게 확인.
+`scripts/rnzone_report.py` 상단 상수: TOUCH/BUYZ/SELL, HOLD_LEV(42)/HOLD_STK(63), LIQ_MIN(유니버스 기준), LEVS(레버리지 후보), DUAL(듀얼코어), SECTORS(섹터 구분), NEW_INVESTOR_MODE(신규 진입 재계산 여부, 기본 True), CAPITAL_KRW(총 자본), RESERVE_KRW(비상금), SLOT_KRW(유형별 슬롯), WP_CAP_KRW(주배당 종목당 상한), EXCLUDE_SINGLE_STOCK(단일종목 레버리지 제외, 기본 True — 2026-07-31부터 주문 후 현금 3,000만원 초과 유지 규제), INDEX_LEVS/SINGLE_LEVS(레버리지 후보), GROUPS/MAX_PER_GROUP(업종 동시 보유 상한). 종목 추가 시 야후 티커 규칙(BRK.B→BRK-B) 주의. 사용자가 자본금이나 금액을 바꾸면 이 상수들을 수정할 것 — 임의로 가정하지 말고 반드시 사용자에게 확인. `--json` 출력의 `plan`(종목별 1·2·3차 매수선·주문금액)은 rnzone-kiwoom-autotrade 실행기가 그대로 쓴다.
 
 ## 주의사항 (사용자에게 전달)
 

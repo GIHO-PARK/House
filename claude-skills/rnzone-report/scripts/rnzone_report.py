@@ -3,7 +3,7 @@
 """
 RN존 듀얼전략 리포트
 - 다리1 트레이딩: 레버리지 ETF(거래대금 100만$/일 이상 자동 편입) 자체 차트의 RN존, 기간청산 42일
-  + 신규 상장 레버리지 ETF 매일 자동 발굴(야후 검색 API) → 발견 즉시 유니버스 후보에 편입·캐시 저장
+  (EXCLUDE_SINGLE_STOCK=True면 지수·섹터형 11종만. False면 단일종목 + 신규 상장 ETF 자동 발굴까지)
 - 다리1' 본주 트레이딩: 듀얼코어 6종목 본주 차트, 기간청산 63일
 - 다리2 주배당 적립: 본주 신호 발생 시 WeeklyPay ETF 매수(영구 보유), 분배금은 섹터 모멘텀 1위에 재투자
 - 모든 보유 포지션에 매도 시점(목표가/본절가/기간 D-day) 표시
@@ -36,9 +36,21 @@ MAX_CONCURRENT = 7  # 동시 진입 상한(경고용)
 MAX_CANDS = 60     # 레버리지 후보 상한(폭주 방지)
 NEW_INVESTOR_MODE = True  # 실보유 없는 신규 투자자용: 과거 평단 대신 오늘 종가를 진입가로 재계산,
                           # 이미 청산됐어야 할 매도/본절/기간청산 안내는 표시하지 않음
-CAPITAL_KRW = 50_000_000   # 총 투입 자본
-TRADE_RATIO = 0.7          # 트레이딩(레버리지+본주) 배분 비율 — 나머지는 주배당 적립
 FX_FALLBACK = 1400.0       # 환율 조회 실패 시 참고 환율($/원)
+
+# ── 자본 배분 (표준형: 지수·섹터 레버리지 + 본주) ─────────────
+# 2026-07-31부터 단일종목 레버리지는 "주문 후 현금 3,000만원 초과 유지"가 필요해
+# 이 자본 규모에서는 운용이 불가능하다 → 지수·섹터형 레버리지 + 본주만 운용한다.
+CAPITAL_KRW = 32_267_600   # 계좌 총 자본
+RESERVE_KRW = 10_000_000   # 비상금: 지수형 기본예탁금(2단계 1,000만원) 대비 + 폭락장 현금. 주문에 쓰지 않음
+# 슬롯 = 한 종목에 1·2·3차를 끝까지 넣었을 때의 총액. 1차/2차/3차 = 슬롯 × 1/6, 2/6, 3/6
+SLOT_KRW = {"lev": 18_000_000,  # 지수·섹터 레버리지: 300 / 600 / 900만원
+            "stk": 12_000_000}  # 본주: 200 / 400 / 600만원
+WP_CAP_KRW = 1_500_000     # 주배당 ETF 종목당 상한: 25 / 50 / 75만원
+EXCLUDE_SINGLE_STOCK = True  # True면 단일종목 레버리지 제외 + 신규 ETF 자동 발굴 끔(발굴분 대부분이 단일종목)
+# 같은 업종이 동시에 무너질 때를 대비한 동시 보유 상한
+GROUPS = {"반도체·기술": {"SOXL", "TECL", "USD", "NVDA", "AMD", "ARM"}}
+MAX_PER_GROUP = 2
 
 LV = [1, 2, 3, 5, 7.5, 10, 15, 20, 30, 50, 75, 100, 150, 200, 300,
       500, 750, 1000, 1500, 2000]
@@ -47,11 +59,13 @@ LV = [1, 2, 3, 5, 7.5, 10, 15, 20, 30, 50, 75, 100, 150, 200, 300,
 DUAL = [("AMD", "AMDW", 1.18), ("ARM", "ARMW", 1.20), ("PLTR", "PLTW", 1.16),
         ("GOOGL", "GOOW", 1.20), ("TSLA", "TSLW", 1.18), ("NVDA", "NVDW", 1.17)]
 
-# 레버리지 ETF 기본 후보(여기에 매일 자동 발굴분이 합쳐짐)
-LEVS = ["SSO", "QLD", "UPRO", "SPXL", "TQQQ", "SOXL", "TECL", "TNA", "FAS", "USD",
-        "LABU", "TSLL", "TSLT", "NVDL", "NVDU", "AMDL", "CONL", "MSTX", "MSTU",
-        "GGLL", "FBL", "AAPU", "MSFU", "AMZU", "PLTU", "SMCX", "AVGX", "NFXL",
-        "BITX", "ETHU", "ROBN", "ARMG", "BABX"]
+# 레버리지 ETF 기본 후보 — 지수·섹터형(단일종목 아님)과 단일종목형
+INDEX_LEVS = ["SSO", "QLD", "UPRO", "SPXL", "TQQQ", "TNA",   # 시장지수
+              "SOXL", "TECL", "FAS", "USD", "LABU"]          # 섹터지수
+SINGLE_LEVS = ["TSLL", "TSLT", "NVDL", "NVDU", "AMDL", "CONL", "MSTX", "MSTU",
+               "GGLL", "FBL", "AAPU", "MSFU", "AMZU", "PLTU", "SMCX", "AVGX", "NFXL",
+               "BITX", "ETHU", "ROBN", "ARMG", "BABX"]
+LEVS = INDEX_LEVS + SINGLE_LEVS
 
 SECTORS = {"반도체": ["NVDW", "AMDW", "ARMW"],
            "소프트웨어": ["GOOW", "PLTW"],
@@ -137,7 +151,7 @@ def load_merge_cache(found):
     return merged
 
 
-def bars_vol(res):
+def bars_vol(res, drop_live=True):
     ts = res["timestamp"]
     q = res["indicators"]["quote"][0]
     bars, vols = [], []
@@ -145,6 +159,14 @@ def bars_vol(res):
         if q["high"][i] is not None and q["low"][i] is not None and q["close"][i] is not None:
             bars.append((ts[i], q["high"][i], q["low"][i], q["close"][i]))
             vols.append(q["close"][i] * (q["volume"][i] or 0))
+    # 장중에 실행하면 야후가 '진행 중인 오늘 봉'을 마지막에 붙인다 — 고가/저가가 미완성이라
+    # 신호가 틀어지므로 정규장 종료 전이면 그 봉을 버리고 직전 거래일 종가 기준으로 계산한다.
+    if drop_live and bars:
+        reg = (res.get("meta", {}).get("currentTradingPeriod") or {}).get("regular") or {}
+        start, end = reg.get("start"), reg.get("end")
+        if start and end and bars[-1][0] >= start and time.time() < end:
+            bars.pop()
+            vols.pop()
     return bars, vols
 
 
@@ -219,7 +241,7 @@ def fetch_fx():
     """USD/KRW 환율(야후 KRW=X). 실패 시 FX_FALLBACK 사용."""
     try:
         res = fetch("KRW=X", "5d")
-        bars, _ = bars_vol(res)
+        bars, _ = bars_vol(res, drop_live=False)
         if bars:
             return bars[-1][3], True
     except Exception:
@@ -230,19 +252,20 @@ def fetch_fx():
 def main():
     json_mode = "--json" in sys.argv[1:]
 
-    # 0) 환율 + 신규 레버리지 ETF 발굴 + 캐시 병합
+    # 0) 환율 + (단일종목 허용 시) 신규 레버리지 ETF 발굴 + 캐시 병합
     fx, fx_ok = fetch_fx()
-    trade_budget_krw = CAPITAL_KRW * TRADE_RATIO
-    wp_budget_krw = CAPITAL_KRW * (1 - TRADE_RATIO)
-    slot_krw = trade_budget_krw / MAX_CONCURRENT
-    slot_usd = slot_krw / fx
-    wp_cap_krw = wp_budget_krw / len(DUAL)
+    slot_usd = {k: v / fx for k, v in SLOT_KRW.items()}
+    wp_cap_krw = WP_CAP_KRW
     wp_cap_usd = wp_cap_krw / fx
 
-    disc_today = discover_levs()
-    disc_all = load_merge_cache(disc_today)
-    new_syms = sorted(s for s in disc_all if s not in LEVS)
-    candidates = (LEVS + new_syms)[:MAX_CANDS]
+    if EXCLUDE_SINGLE_STOCK:
+        new_syms = []
+        candidates = list(INDEX_LEVS)
+    else:
+        disc_today = discover_levs()
+        disc_all = load_merge_cache(disc_today)
+        new_syms = sorted(s for s in disc_all if s not in LEVS)
+        candidates = (LEVS + new_syms)[:MAX_CANDS]
 
     lev_rows, lev_thin, lev_young, fails = [], [], [], []
     for sym in candidates:
@@ -276,10 +299,13 @@ def main():
 
     stk_rows = []
     wp_ret = {}
+    cal_ts = []  # 거래일 달력(기간청산 일수 계산용) — 본주 일봉 날짜를 그대로 쓴다
     for s, wp, beta in DUAL:
         try:
             res = fetch(s)
             bars, _ = bars_vol(res)
+            if len(bars) > len(cal_ts):
+                cal_ts = [b[0] for b in bars]
             st = run_machine(bars, HOLD_STK)
             st.update({"sym": s, "wp": wp, "beta": beta, "wp_px": None})
             try:
@@ -331,6 +357,46 @@ def main():
         return f"≈{val:,.2f}${tag}"
 
     todo, holding, near, waiting, idle, entries = [], [], [], [], [], []
+    plan = []  # 자동매수 실행기용: 종목별 1·2·3차 매수선과 차수별 주문금액
+
+    def group_of(sym):
+        for g, members in GROUPS.items():
+            if sym in members:
+                return g
+        return None
+
+    def add_plan(r, is_stk, cat, su):
+        b1 = r["b1"]
+        if not b1:
+            return
+        l3 = below(b1)
+        item = {
+            "sym": r["sym"],
+            "category": cat,
+            "group": group_of(r["sym"]),
+            "machine_stage": r["stage"],
+            "armed": r["armed"],
+            "b1": b1,
+            "close": round(r["close"], 4),
+            # 리포트의 '매수 대기'와 같은 조건: 조건성립(stage1) 상태이고 현재가가 상단선 아래
+            "waiting": bool(r["stage"] == 1 and r["armed"] and r["close"] <= r["armed"]),
+            "lines": {"1": round(b1 * (1 + BUYZ), 4),
+                      "2": round(b1 * 0.80, 4),
+                      "3": round(l3 * (1 + BUYZ), 4) if l3 else None},
+            "amount_usd": {"1": round(su * 100 / 600, 2),
+                           "2": round(su * 200 / 600, 2),
+                           "3": round(su * 300 / 600, 2)},
+            "hold_limit_days": r["hold"],
+        }
+        if is_stk:
+            item["weekly_pay"] = {
+                "sym": r["wp"],
+                "close": round(r["wp_px"], 4) if r["wp_px"] else None,
+                "amount_usd": {"1": round(wp_cap_usd * 100 / 600, 2),
+                               "2": round(wp_cap_usd * 200 / 600, 2),
+                               "3": round(wp_cap_usd * 300 / 600, 2)},
+            }
+        plan.append(item)
     n_open = 0
 
     def classify(r, is_stk):
@@ -338,6 +404,9 @@ def main():
         sym = r["sym"]
         tag = f"{sym}(본주)" if is_stk else (f"🆕{sym}" if r.get("new") else sym)
         hold = r["hold"]
+        cat = "stk" if is_stk else "lev"
+        su = slot_usd[cat]
+        add_plan(r, is_stk, cat, su)
         ev = r["events"]
         if ev.get("cond"):
             ec = ev["cond"]
@@ -348,7 +417,7 @@ def main():
         if ev.get("b1"):
             eb = ev["b1"]["b1"]
             tgt = eb * (1 + BUYZ) * (1 + SELL) if eb else None
-            amt = slot_usd * (100 / 600)
+            amt = su * (100 / 600)
             x = (f"✅ **{tag} 1차 매수** {fl(eb)}$ → 목표 ~{fp(tgt)}$(+20%) / {hold}일 한도 "
                  f"/ 진입금액 ${fp(amt)}(약 {fkrw(amt * fx)})")
             if is_stk:
@@ -356,14 +425,14 @@ def main():
                 x += f" + **{r['wp']} 적립 1차** ({est_wp(r, eb)}, 약 {fkrw(wamt * fx)})"
             todo.append(x)
         if ev.get("b2"):
-            amt = slot_usd * (200 / 600)
+            amt = su * (200 / 600)
             x = f"✅✅ **{tag} 2차 매수** (1차가 -20%) / 추가 진입금액 ${fp(amt)}(약 {fkrw(amt * fx)})"
             if is_stk:
                 wamt = wp_cap_usd * (200 / 600)
                 x += f" + {r['wp']} 적립 2차 (약 {fkrw(wamt * fx)})"
             todo.append(x)
         if ev.get("b3"):
-            amt = slot_usd * (300 / 600)
+            amt = su * (300 / 600)
             x = f"✅✅✅ **{tag} 3차 매수** (아래 RN선) / 추가 진입금액 ${fp(amt)}(약 {fkrw(amt * fx)})"
             if is_stk:
                 wamt = wp_cap_usd * (300 / 600)
@@ -387,7 +456,7 @@ def main():
                 entry = c
                 target = entry * (1 + SELL)
                 weight = {2: 100 / 600, 3: 300 / 600}.get(st, 1.0)
-                amt = slot_usd * weight
+                amt = su * weight
                 wp_note = f" (참고: {r['wp']} {est_wp(r, entry)})" if is_stk else ""
                 x = (f"| {tag} | {stage_label}까지 도달(오늘 일괄 진입) | {fp(entry)}$(오늘){wp_note} | "
                      f"**{fp(target)}$** | D-{hold} (0/{hold}, 오늘 진입 기준) | {nx} | "
@@ -421,11 +490,10 @@ def main():
                                f"D-{dd} ({r['held']}/{hold}) | {nx} |")
         elif st == 1 and r["armed"] and c <= r["armed"]:
             gap = (r["b1"] * (1 + BUYZ) / c - 1) * 100
-            amt = slot_usd * (100 / 600)
+            amt = su * (100 / 600)
             x = (f"| {tag} | {fp(c)}$ | {fl(r['armed'])}$ | **{fl(r['b1'])}$** | {gap:+.1f}% | "
                  f"{fp(amt)}$(약 {fkrw(amt * fx)}) |")
-            if is_stk:
-                x += f" {est_wp(r, r['b1'])} ({r['wp']}) |"
+            x += f" {est_wp(r, r['b1'])} ({r['wp']}) |" if is_stk else " - |"
             waiting.append((gap, x, is_stk))
         else:
             A = above(c)
@@ -452,10 +520,17 @@ def main():
             "fx_krw_per_usd": fx,
             "fx_ok": fx_ok,
             "capital_krw": CAPITAL_KRW,
-            "trade_ratio": TRADE_RATIO,
+            "reserve_krw": RESERVE_KRW,
+            "slot_krw": SLOT_KRW,
+            "wp_cap_krw": WP_CAP_KRW,
             "max_concurrent": MAX_CONCURRENT,
+            "max_per_group": MAX_PER_GROUP,
+            "exclude_single_stock": EXCLUDE_SINGLE_STOCK,
             "n_open": n_open,
             "entries": entries,
+            "plan": plan,
+            "trading_dates": [datetime.fromtimestamp(t, tz=timezone.utc).strftime("%Y-%m-%d")
+                              for t in cal_ts[-150:]],
         }
         print(json.dumps(payload, ensure_ascii=False))
         return
@@ -467,10 +542,16 @@ def main():
 
     out.append(f"## 💰 자본 배분 (총 {fkrw(CAPITAL_KRW)} 기준)")
     out.append(f"- 환율: 1$ ≈ {fx:,.0f}원 (야후 KRW=X{'' if fx_ok else ', 조회 실패 → 참고환율 사용'})")
-    out.append(f"- 트레이딩(레버리지+본주, {TRADE_RATIO*100:.0f}%): {fkrw(trade_budget_krw)} → "
-               f"동시 진입 {MAX_CONCURRENT}슬롯, 슬롯당 {fkrw(slot_krw)}(${fp(slot_usd)}) — 1:2:3 비중 분할")
-    out.append(f"- 주배당 적립({(1-TRADE_RATIO)*100:.0f}%): {fkrw(wp_budget_krw)} → "
-               f"종목당 상한 {fkrw(wp_cap_krw)}(${fp(wp_cap_usd)}) (듀얼코어 {len(DUAL)}종목 균등 배분)")
+    out.append(f"- 비상금 {fkrw(RESERVE_KRW)} (주문에 쓰지 않음) · 운용금 {fkrw(CAPITAL_KRW - RESERVE_KRW)}")
+    for cat, label in (("lev", "지수·섹터 레버리지"), ("stk", "본주")):
+        k = SLOT_KRW[cat]
+        out.append(f"- {label} 슬롯 {fkrw(k)} → 1차 {fkrw(k / 6)} / 2차 {fkrw(k * 2 / 6)} / 3차 {fkrw(k * 3 / 6)}"
+                   f" (1차 ${fp(slot_usd[cat] / 6)})")
+    out.append(f"- 주배당 적립: 종목당 상한 {fkrw(wp_cap_krw)}(${fp(wp_cap_usd)}), 1:2:3 분할")
+    out.append(f"- 동시 보유 {MAX_CONCURRENT}종목, " + ", ".join(
+        f"{g} 계열 최대 {MAX_PER_GROUP}종목({'·'.join(sorted(m))})" for g, m in GROUPS.items()))
+    if EXCLUDE_SINGLE_STOCK:
+        out.append("- 단일종목 레버리지 제외 (2026-07-31 규제: 주문 후 현금 3,000만원 초과 유지 필요)")
     out.append("")
 
     out.append("## 📌 오늘 할 일")
@@ -532,7 +613,7 @@ def main():
 
     n_top = len([r for r in lev_rows if not r.get("keep")])
     out.append(f"## 🧭 유니버스 점검 — 거래대금 상위 {n_top}종 + 보유 유지 {len(kept)}종 "
-               f"(매일 재평가 + 신규 자동 발굴)")
+               + ("(지수·섹터형 고정 후보, 매일 재평가)" if EXCLUDE_SINGLE_STOCK else "(매일 재평가 + 신규 자동 발굴)"))
     out.append("편입: " + ", ".join(
         ("🆕" if r.get("new") else "") + f"{r['sym']}({r['adv']/1e6:.0f}M)"
         for r in lev_rows if not r.get("keep")))
@@ -562,7 +643,7 @@ def main():
     out.append("---")
     out.append(f"*규칙: 3단 매수(1:2:3) · 트레이딩 매도 = 목표 +20% / 2차 후 본절 / 기간청산(레버 {HOLD_LEV}일·본주 {HOLD_STK}일) · "
                f"주배당은 영구 보유·분배금 섹터모멘텀 재투자 · 동시 진입 {MAX_CONCURRENT}종 상한 · "
-               f"종목당 주배당 상한 {fkrw(wp_cap_krw)}(자본 {fkrw(CAPITAL_KRW)} 기준, {TRADE_RATIO*100:.0f}:{(1-TRADE_RATIO)*100:.0f} 배분) · "
+               f"종목당 주배당 상한 {fkrw(wp_cap_krw)}(자본 {fkrw(CAPITAL_KRW)}, 비상금 {fkrw(RESERVE_KRW)} 별도) · "
                f"가격 손절 없음(출구는 기간·자격·회로차단기) · 분기 자격점검*")
     out.append(f"*데이터: 야후 파이낸스 일봉 ({data_date}) · 이 리포트는 자동 계산 결과이며 투자 판단의 참고용입니다.*")
 
