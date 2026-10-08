@@ -77,8 +77,11 @@ def log_event(event: dict) -> None:
 def fetch_signals(timeout: int = 300) -> dict:
     if not RNZONE_SCRIPT.exists():
         raise SystemExit(f"rnzone_report.py를 찾을 수 없습니다: {RNZONE_SCRIPT}")
+    print("[1/3] 오늘의 신호 계산 중 (rnzone_report.py 실행, 야후 파이낸스 조회로 1~2분 소요)...", flush=True)
+    t0 = time.monotonic()
     result = subprocess.run([sys.executable, str(RNZONE_SCRIPT), "--json"],
                             capture_output=True, text=True, timeout=timeout)
+    print(f"[1/3] 신호 계산 완료 ({time.monotonic() - t0:.1f}초)", flush=True)
     if result.returncode != 0:
         raise SystemExit(f"rnzone_report.py 실행 실패:\n{result.stderr}")
     try:
@@ -293,6 +296,7 @@ def build_actions(payload: dict, account: dict, state: dict, max_order_usd: floa
 
 def read_account() -> dict:
     import kiwoom_broker as broker
+    print("[2/3] 키움 계좌 조회 중 (예수금 → 잔고 → 미체결)...", flush=True)
     cash = broker.get_cash()
     time.sleep(broker.REQUEST_DELAY_SECONDS)
     holdings = broker.get_holdings()
@@ -310,14 +314,17 @@ def execute(actions: list, *, live: bool) -> list:
     if live:
         import kiwoom_broker as broker
         from kiwoom import KiwoomError
+    if actions:
+        print(f"[3/3] 주문 {'제출' if live else '계획'} 시작 ({len(actions)}건)", flush=True)
     for a in actions:
         label = (f"[{a['type']}] {a['sym']} " +
                  (f"주문번호 {a['ord_no']}" if a["type"] == "cancel" else f"{a['qty']}주 @ ${a['price']:,.2f}") +
                  f" — {a['why']}")
         if not live:
-            print(f"  · {label}")
+            print(f"  · {label}", flush=True)
             log_event({**a, "status": "dry_run"})
             continue
+        print(f"  ... {a['sym']} 처리 중 ({a['type']})", flush=True)
         try:
             stex = broker.resolve_exchange(a["sym"])
             time.sleep(broker.REQUEST_DELAY_SECONDS)
@@ -337,10 +344,10 @@ def execute(actions: list, *, live: bool) -> list:
                     failed.append(a["sym"])
                     continue
                 resp = broker.place_limit_buy(a["sym"], stex, a["qty"], a["price"])
-            print(f"  ✓ {label} (주문번호 {resp.get('ord_no')})")
+            print(f"  ✓ {label} (주문번호 {resp.get('ord_no')})", flush=True)
             log_event({**a, "status": "placed", "ord_no": resp.get("ord_no")})
         except (KiwoomError, ValueError) as exc:
-            print(f"  ✗ {label} — {exc}")
+            print(f"  ✗ {label} — {exc}", flush=True)
             log_event({**a, "status": "failed", "error": str(exc)})
             if a["type"] == "buy":
                 failed.append(a["sym"])
