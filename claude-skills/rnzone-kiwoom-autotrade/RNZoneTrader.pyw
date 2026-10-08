@@ -7,6 +7,7 @@
 - 매일 자동실행 켜기/끄기(작업 스케줄러, 절전 중이면 깨워서 실행)
 - 보유 현황(장부)·마지막 실행 결과 확인
 - 설정(키움 App Key/Secret, 주문 1건 상한) 저장
+- 업데이트: GitHub의 최신 코드를 받아 교체(.env·장부·로그·.venv는 그대로 둔다)
 """
 from __future__ import annotations
 
@@ -16,7 +17,10 @@ import queue
 import subprocess
 import sys
 import threading
+import io
 import tkinter as tk
+import urllib.request
+import zipfile
 from datetime import datetime
 from pathlib import Path
 from tkinter import messagebox, scrolledtext, ttk
@@ -28,6 +32,14 @@ LOG_PATH = APP_DIR / "daily_run.log"
 POSITIONS_PATH = SCRIPTS / "positions.json"
 RUN_BAT = APP_DIR / "run_daily.bat"
 TASK_NAME = "RNZone_Kiwoom_AutoTrade"
+# 업데이트 출처(공개 저장소). 받은 버전은 version.json에 기록한다.
+REPO = "GIHO-PARK/House"
+BRANCH = "claude/install-lppak6"
+VERSION_PATH = APP_DIR / "version.json"
+UPDATE_DIRS = ("claude-skills/rnzone-kiwoom-autotrade/", "claude-skills/rnzone-report/")
+# 사용자 데이터 — 업데이트로 절대 덮어쓰지 않는다
+KEEP_NAMES = {".env", "positions.json", "order_log.jsonl", "daily_run.log", "exchange_cache.json",
+              "discovered.json", "executed_signals.json", "version.json"}
 RUN_TIME = "23:45"
 DEFAULT_MAX_ORDER_USD = "7000"
 NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)
@@ -102,6 +114,70 @@ def unregister_task() -> tuple[bool, str]:
     return code == 0, out
 
 
+# ── 업데이트 ─────────────────────────────────────────────
+
+def _get(url: str, timeout: int = 30) -> bytes:
+    req = urllib.request.Request(url, headers={"User-Agent": "RNZoneTrader",
+                                               "Accept": "application/vnd.github+json"})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        return r.read()
+
+
+def local_version() -> dict:
+    try:
+        return json.loads(VERSION_PATH.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+
+
+def check_update() -> dict:
+    """{latest: {sha, date, message}, changes: [메시지 첫 줄...], up_to_date: bool}"""
+    head = json.loads(_get(f"https://api.github.com/repos/{REPO}/commits/{BRANCH}"))
+    latest = {"sha": head["sha"], "date": head["commit"]["committer"]["date"][:16].replace("T", " "),
+              "message": head["commit"]["message"].splitlines()[0]}
+    mine = local_version().get("sha")
+    if mine == latest["sha"]:
+        return {"latest": latest, "changes": [], "up_to_date": True}
+    changes = []
+    try:
+        if mine:
+            cmp = json.loads(_get(f"https://api.github.com/repos/{REPO}/compare/{mine}...{latest['sha']}"))
+            changes = [c["commit"]["message"].splitlines()[0] for c in cmp.get("commits", [])][::-1]
+        else:
+            recent = json.loads(_get(f"https://api.github.com/repos/{REPO}/commits?sha={BRANCH}&per_page=5"))
+            changes = [c["commit"]["message"].splitlines()[0] for c in recent]
+    except Exception:
+        changes = [latest["message"]]
+    return {"latest": latest, "changes": changes, "up_to_date": False}
+
+
+def apply_update(latest: dict) -> list:
+    """해당 버전 ZIP을 받아 두 스킬 폴더의 코드만 교체한다. 바뀐 파일 목록을 돌려준다."""
+    data = _get(f"https://codeload.github.com/{REPO}/zip/{latest['sha']}", timeout=120)
+    root = APP_DIR.parent.parent  # .../House (claude-skills 의 상위)
+    changed = []
+    with zipfile.ZipFile(io.BytesIO(data)) as z:
+        for info in z.infolist():
+            if info.is_dir():
+                continue
+            rel = info.filename.split("/", 1)[1] if "/" in info.filename else ""
+            if not rel.startswith(UPDATE_DIRS):
+                continue
+            parts = rel.split("/")
+            if parts[-1] in KEEP_NAMES or ".venv" in parts or "__pycache__" in parts:
+                continue
+            target = root / rel
+            new = z.read(info)
+            if target.exists() and target.read_bytes() == new:
+                continue
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(new)
+            changed.append(rel.split("claude-skills/", 1)[-1])
+    VERSION_PATH.write_text(json.dumps({**latest, "installed_at": f"{datetime.now():%Y-%m-%d %H:%M}"},
+                                       ensure_ascii=False, indent=1), encoding="utf-8")
+    return changed
+
+
 # ── 화면 ─────────────────────────────────────────────────
 
 class App(tk.Tk):
@@ -137,6 +213,14 @@ class App(tk.Tk):
         for b in (self.btn_dry, self.btn_live, self.btn_task, self.btn_cfg, self.btn_log):
             b.pack(side="left", padx=(0, 6))
 
+        bar2 = ttk.Frame(self, padding=(12, 0, 12, 4))
+        bar2.pack(fill="x")
+        self.btn_update = ttk.Button(bar2, text="업데이트 확인", command=self.update_check)
+        self.btn_update.pack(side="left", padx=(0, 6))
+        ttk.Button(bar2, text="실행 결과 복사", command=self.copy_output).pack(side="left", padx=(0, 6))
+        self.lbl_ver = ttk.Label(bar2, text="")
+        self.lbl_ver.pack(side="left", padx=(6, 0))
+
         pane = ttk.PanedWindow(self, orient="vertical")
         pane.pack(fill="both", expand=True, padx=12, pady=(4, 12))
 
@@ -158,6 +242,7 @@ class App(tk.Tk):
 
         self.refresh()
         self.after(150, self.drain)
+        self.after(1200, lambda: self.update_check(silent=True))
         if not ENV_PATH.exists():
             self.after(300, self.first_run)
 
@@ -351,6 +436,65 @@ class App(tk.Tk):
         btns.grid(row=len(fields) + 2, column=0, columnspan=2, sticky="e", pady=(14, 0))
         ttk.Button(btns, text="취소", command=win.destroy).pack(side="right")
         ttk.Button(btns, text="저장", command=save).pack(side="right", padx=(0, 6))
+
+    # 업데이트
+    def update_check(self, silent: bool = False) -> None:
+        mine = local_version()
+        self.lbl_ver.config(text=f"현재 버전: {mine.get('date', '확인 안 됨')} · 확인 중...")
+        self.btn_update.state(["disabled"])
+
+        def work() -> None:
+            try:
+                info = check_update()
+            except Exception as exc:  # noqa: BLE001
+                msg = str(exc)  # exc는 except 블록이 끝나면 사라지므로 미리 문자열로 잡아 둔다
+                self.after(0, lambda: self._update_checked(None, silent, msg))
+                return
+            self.after(0, lambda: self._update_checked(info, silent, None))
+        threading.Thread(target=work, daemon=True).start()
+
+    def _update_checked(self, info: dict | None, silent: bool, error: str | None) -> None:
+        self.btn_update.state(["!disabled"])
+        mine = local_version()
+        if error:
+            self.lbl_ver.config(text=f"현재 버전: {mine.get('date', '확인 안 됨')} · 업데이트 확인 실패")
+            if not silent:
+                messagebox.showwarning("업데이트", f"최신 버전을 확인하지 못했습니다(인터넷 연결 확인):\n{error}")
+            return
+        if info["up_to_date"]:
+            self.lbl_ver.config(text=f"✅ 최신 버전 ({mine.get('date')})")
+            self.btn_update.config(text="업데이트 확인")
+            if not silent:
+                messagebox.showinfo("업데이트", "이미 최신 버전입니다.")
+            return
+        self.lbl_ver.config(text=f"🆕 새 버전 있음 ({info['latest']['date']} UTC) — 왼쪽 버튼을 눌러 업데이트")
+        self.btn_update.config(text="🆕 업데이트 설치")
+        if silent:
+            return
+        if self.running:
+            messagebox.showinfo("업데이트", "실행이 끝난 뒤에 업데이트하세요.")
+            return
+        changes = "\n".join(f"· {c}" for c in info["changes"][:12]) or f"· {info['latest']['message']}"
+        if not messagebox.askyesno("업데이트 설치",
+                                   f"새 버전({info['latest']['date']} UTC)의 변경 내용:\n\n{changes}\n\n"
+                                   "설정(.env)·보유 장부·로그는 그대로 둡니다. 설치할까요?"):
+            return
+        try:
+            changed = apply_update(info["latest"])
+        except Exception as exc:  # noqa: BLE001
+            messagebox.showerror("업데이트", f"설치하지 못했습니다:\n{exc}")
+            return
+        files = "\n".join(changed[:15]) + (f"\n외 {len(changed) - 15}개" if len(changed) > 15 else "")
+        messagebox.showinfo("업데이트 완료", f"바뀐 파일 {len(changed)}개:\n{files or '(없음)'}\n\n프로그램을 다시 엽니다.")
+        subprocess.Popen([python_exe(windowless=True), str(Path(__file__).resolve())], cwd=str(APP_DIR),
+                         creationflags=NO_WINDOW)
+        self.destroy()
+
+    def copy_output(self) -> None:
+        text = self.out.get("1.0", "end").strip()
+        self.clipboard_clear()
+        self.clipboard_append(text)
+        messagebox.showinfo("복사", "실행 결과를 복사했습니다. 대화창에 붙여넣기(Ctrl+V) 하세요.")
 
     def open_log(self) -> None:
         if not LOG_PATH.exists():

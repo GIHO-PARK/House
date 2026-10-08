@@ -5,6 +5,7 @@ claude-skills/rnzone-kiwoom-autotrade/scripts/positions.json
 claude-skills/rnzone-kiwoom-autotrade/scripts/exchange_cache.json
 claude-skills/rnzone-kiwoom-autotrade/daily_run.log
 claude-skills/rnzone-kiwoom-autotrade/.venv/
+claude-skills/rnzone-kiwoom-autotrade/version.json
 
 # 자격 증명을 담을 수 있는 .env 계열 파일
 .env
