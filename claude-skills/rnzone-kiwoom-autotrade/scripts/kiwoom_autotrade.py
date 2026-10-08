@@ -36,6 +36,13 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
+# 한국어 Windows 콘솔(cp949)에서 직접 실행해도 이모지 때문에 멈추지 않도록, 못 쓰는 글자는 '?'로 바꾼다.
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(errors="replace")
+    except Exception:
+        pass
+
 SCRIPT_DIR = Path(__file__).resolve().parent
 RNZONE_SCRIPT = (SCRIPT_DIR / ".." / ".." / "rnzone-report" / "scripts" / "rnzone_report.py").resolve()
 STATE_PATH = SCRIPT_DIR / "positions.json"
@@ -79,8 +86,11 @@ def fetch_signals(timeout: int = 300) -> dict:
         raise SystemExit(f"rnzone_report.py를 찾을 수 없습니다: {RNZONE_SCRIPT}")
     print("[1/3] 오늘의 신호 계산 중 (rnzone_report.py 실행, 야후 파이낸스 조회로 1~2분 소요)...", flush=True)
     t0 = time.monotonic()
+    # 리포트는 UTF-8로 출력한다. 한국어 Windows 기본 인코딩(cp949)으로 읽으면 깨지므로 명시한다.
+    env = {**os.environ, "PYTHONIOENCODING": "utf-8"}
     result = subprocess.run([sys.executable, str(RNZONE_SCRIPT), "--json"],
-                            capture_output=True, text=True, timeout=timeout)
+                            capture_output=True, text=True, encoding="utf-8", errors="replace",
+                            env=env, timeout=timeout)
     print(f"[1/3] 신호 계산 완료 ({time.monotonic() - t0:.1f}초)", flush=True)
     if result.returncode != 0:
         raise SystemExit(f"rnzone_report.py 실행 실패:\n{result.stderr}")
