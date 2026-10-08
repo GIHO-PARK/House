@@ -199,12 +199,27 @@ def _all_rows(api_id: str, path: str, body: dict, list_key: str = "result_list")
     client = get_client()
     rows: list = []
     first: dict | None = None
-    for response in client.iterate_pages(api_id=api_id, path=path, body=body, max_pages=0,
-                                         page_delay_seconds=REQUEST_DELAY_SECONDS):
-        if first is None:
-            first = response.body
-        rows.extend(r for r in (response.body.get(list_key) or []) if isinstance(r, dict))
+    try:
+        for response in client.iterate_pages(api_id=api_id, path=path, body=body, max_pages=0,
+                                             page_delay_seconds=REQUEST_DELAY_SECONDS):
+            if first is None:
+                first = response.body
+            rows.extend(r for r in (response.body.get(list_key) or []) if isinstance(r, dict))
+    except KiwoomError as exc:
+        # 조회 결과가 0건이면 키움은 빈 목록 대신 오류("미체결내역이 없습니다", "잔고가 없습니다" 등)를
+        # 돌려준다 — 정상적인 '없음'으로 처리한다. 그 밖의 오류는 그대로 올린다.
+        if _is_no_data(exc):
+            return rows, first or {}
+        raise
     return rows, first or {}
+
+
+NO_DATA_MARKERS = ("내역이 없", "내역이없", "잔고가 없", "잔고없", "조회내역", "데이터가 없", "자료가 없")
+
+
+def _is_no_data(exc: Exception) -> bool:
+    text = str(exc).replace(" ", "")
+    return any(m.replace(" ", "") in text for m in NO_DATA_MARKERS)
 
 
 def get_holdings() -> dict:
