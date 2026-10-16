@@ -29,6 +29,7 @@ APP_DIR = Path(__file__).resolve().parent
 SCRIPTS = APP_DIR / "scripts"
 ENV_PATH = APP_DIR / ".env"
 LOG_PATH = APP_DIR / "daily_run.log"
+ORDER_LOG_PATH = APP_DIR / "scripts" / "order_log.jsonl"
 POSITIONS_PATH = SCRIPTS / "positions.json"
 RUN_BAT = APP_DIR / "run_daily.bat"
 TASK_NAME = "RNZone_Kiwoom_AutoTrade"
@@ -87,7 +88,8 @@ def task_status() -> str | None:
     code, out = powershell(
         "[Console]::OutputEncoding=[Text.Encoding]::UTF8;"
         f"$t=Get-ScheduledTask -TaskName '{TASK_NAME}' -ErrorAction SilentlyContinue;"
-        "if($t){$i=$t|Get-ScheduledTaskInfo; if($i.NextRunTime){$i.NextRunTime.ToString('yyyy-MM-dd HH:mm')}else{'예약됨'}}"
+        "if($t){$i=$t|Get-ScheduledTaskInfo; $n=if($i.NextRunTime){$i.NextRunTime.ToString('yyyy-MM-dd HH:mm')}else{'예약됨'};"
+        "$l=if($i.LastRunTime -and $i.LastRunTime.Year -gt 2000){' · 스케줄러 마지막 실행 '+$i.LastRunTime.ToString('MM/dd HH:mm')+' (결과 코드 '+$i.LastTaskResult+')'}else{' · 스케줄러 실행 이력 없음'};$n+$l}"
     )
     return out.splitlines()[-1] if code == 0 and out else None
 
@@ -272,15 +274,40 @@ class App(tk.Tk):
 
     @staticmethod
     def last_run_text() -> str:
-        if not LOG_PATH.exists():
-            return "마지막 실행: 기록 없음"
-        lines = LOG_PATH.read_text(encoding="utf-8", errors="replace").splitlines()
-        for line in reversed(lines):
-            if "run finished" in line:
-                ok = "exit=0" in line
-                stamp = line.replace("=====", "").replace("run finished", "").strip()
-                return f"마지막 실행: {stamp} — {'정상 종료' if ok else '⚠️ 오류 — 로그 확인 필요'}"
-        return "마지막 실행: 기록 없음"
+        """마지막 '실주문' 실행 결과(주문 접수/실패 건수)와, 와야 할 자동실행이 빠졌는지 알려준다."""
+        from datetime import timedelta
+        events = []
+        if ORDER_LOG_PATH.exists():
+            for line in ORDER_LOG_PATH.read_text(encoding="utf-8", errors="replace").splitlines()[-500:]:
+                try:
+                    e = json.loads(line)
+                except ValueError:
+                    continue
+                if e.get("status") in ("placed", "failed", "skipped_zero_qty") or e.get("type") == "account_read":
+                    try:
+                        e["_at"] = datetime.fromisoformat(e["ts"]).astimezone().replace(tzinfo=None)
+                    except (KeyError, ValueError):
+                        continue
+                    events.append(e)
+        # 가장 최근에 '와야 했던' 자동실행 시각(월~금 23:45)
+        now = datetime.now()
+        hh, mm = (int(x) for x in RUN_TIME.split(":"))
+        due = now.replace(hour=hh, minute=mm, second=0, microsecond=0)
+        if due > now:
+            due -= timedelta(days=1)
+        while due.weekday() >= 5:
+            due -= timedelta(days=1)
+        if not events:
+            return "마지막 실주문: 기록 없음"
+        last = max(e["_at"] for e in events)
+        batch = [e for e in events if (last - e["_at"]).total_seconds() < 1800]
+        placed = sum(e.get("status") == "placed" for e in batch)
+        failed = sum(e.get("status") in ("failed", "skipped_zero_qty") or e.get("type") == "account_read" for e in batch)
+        text = f"마지막 실주문: {last:%m/%d %H:%M} — 접수 {placed}건" + (f", ⚠️ 실패 {failed}건(로그 확인)" if failed else "")
+        if last < due - timedelta(minutes=5):
+            day = "월화수목금토일"[due.weekday()]
+            text += f"   ⚠️ {due:%m/%d}({day}) 밤 자동실행 기록이 없습니다 — PC가 꺼져 있었거나 실행되지 않았습니다"
+        return text
 
     # 실행
     def confirm_live(self) -> None:
