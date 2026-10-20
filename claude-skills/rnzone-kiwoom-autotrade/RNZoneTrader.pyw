@@ -91,12 +91,66 @@ def task_status() -> str | None:
         "if($t){$i=$t|Get-ScheduledTaskInfo; $n=if($i.NextRunTime){$i.NextRunTime.ToString('yyyy-MM-dd HH:mm')}else{'예약됨'};"
         "$l=if($i.LastRunTime -and $i.LastRunTime.Year -gt 2000){' · 스케줄러 마지막 실행 '+$i.LastRunTime.ToString('MM/dd HH:mm')+' (결과 코드 '+$i.LastTaskResult+')'}else{' · 스케줄러 실행 이력 없음'};$n+$l}"
     )
-    return out.splitlines()[-1] if code == 0 and out else None
+    if code != 0 or not out:
+        return None
+    line = out.splitlines()[-1]
+    for raw, meaning in TASK_RESULT_TEXT.items():
+        line = line.replace(f"(결과 코드 {raw})", f"(결과 코드 {raw} — {meaning})")
+    return line
+
+
+# 작업 스케줄러 '마지막 실행 결과' 코드 → 사람이 읽는 설명
+TASK_RESULT_TEXT = {
+    "0": "정상 종료",
+    "1": "오류 종료, 로그 확인",
+    "2": "계좌 조회 실패, 로그 확인",
+    "267009": "실행 중",
+    "267011": "아직 실행 안 됨",
+    "2147942667": "폴더 경로 오류",
+    "2147942402": "실행 파일 없음",
+}
+
+
+def _ps_quote(text) -> str:
+    """PowerShell 작은따옴표 문자열 리터럴."""
+    return "'" + str(text).replace("'", "''") + "'"
+
+
+def task_paths() -> tuple[str, str] | None:
+    """등록된 작업이 실행하는 (명령+인수, 작업 폴더). 작업이 없으면 None."""
+    if os.name != "nt":
+        return None
+    code, out = powershell(
+        "[Console]::OutputEncoding=[Text.Encoding]::UTF8;"
+        f"$t=Get-ScheduledTask -TaskName '{TASK_NAME}' -ErrorAction SilentlyContinue;"
+        "if($t){$a=$t.Actions[0]; 'EXE='+$a.Execute+' '+$a.Arguments; 'DIR='+$a.WorkingDirectory}"
+    )
+    if code != 0 or "DIR=" not in out:
+        return None
+    vals = dict(line.split("=", 1) for line in out.splitlines() if line[:4] in ("EXE=", "DIR="))
+    return vals.get("EXE", "").strip(), vals.get("DIR", "").strip()
+
+
+def task_points_here() -> bool:
+    """작업이 지금 이 폴더의 run_daily.bat을 가리키는지. 폴더를 옮기거나 다시 설치하면 예전 경로가 남아
+    작업이 '디렉터리 이름이 잘못됨'(결과 코드 2147942667 = 0x8007010B)으로 실패한다."""
+    paths = task_paths()
+    if not paths:
+        return True
+    exe, wd = paths
+    try:
+        same_dir = Path(wd).resolve() == APP_DIR
+    except OSError:
+        same_dir = False
+    return same_dir and str(RUN_BAT).lower() in exe.lower() and RUN_BAT.exists()
 
 
 def register_task() -> tuple[bool, str]:
+    # cmd.exe로 감싸 실행: 경로에 공백·한글이 있어도 안전하고, 작업 폴더는 항상 지금 이 프로그램 폴더.
+    arg = '/c "' + str(RUN_BAT) + '"'
     script = (
-        f"$a=New-ScheduledTaskAction -Execute '{RUN_BAT}' -WorkingDirectory '{APP_DIR}';"
+        f"$a=New-ScheduledTaskAction -Execute 'cmd.exe' "
+        f"-Argument {_ps_quote(arg)} -WorkingDirectory {_ps_quote(APP_DIR)};"
         "$t=New-ScheduledTaskTrigger -Weekly -DaysOfWeek Monday,Tuesday,Wednesday,Thursday,Friday "
         f"-At '{RUN_TIME}';"
         "$s=New-ScheduledTaskSettingsSet -WakeToRun -StartWhenAvailable -AllowStartIfOnBatteries "
@@ -251,6 +305,12 @@ class App(tk.Tk):
     # 상태 갱신
     def refresh(self) -> None:
         nxt = task_status()
+        if nxt and not task_points_here():
+            # 예전 설치 폴더를 가리키는 작업 → 이 폴더로 자동 재등록
+            ok, out = register_task()
+            self.write(("🔧 자동실행 작업이 예전 폴더를 가리키고 있어 이 폴더로 다시 등록했습니다.\n"
+                      f"   실행 파일: {RUN_BAT}\n") if ok else f"⚠️ 자동실행 재등록 실패: {out}\n")
+            nxt = task_status()
         if nxt:
             self.lbl_task.config(text=f"✅ 자동실행 켜짐 — 다음 실행 {nxt} (월~금 {RUN_TIME}, 절전 중이면 깨워서 실행)")
             self.btn_task.config(text="자동실행 끄기")

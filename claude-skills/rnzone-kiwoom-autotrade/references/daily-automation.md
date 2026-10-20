@@ -83,7 +83,7 @@ type daily_run.log
 
 ```powershell
 $dir = "C:\Users\parki\House\claude-skills\rnzone-kiwoom-autotrade"
-$action = New-ScheduledTaskAction -Execute "$dir\run_daily.bat" -WorkingDirectory $dir
+$action = New-ScheduledTaskAction -Execute "cmd.exe" -Argument "/c `"$dir\run_daily.bat`"" -WorkingDirectory $dir
 $trigger = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Monday,Tuesday,Wednesday,Thursday,Friday -At 23:45
 $settings = New-ScheduledTaskSettingsSet -WakeToRun -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit (New-TimeSpan -Minutes 30)
 Register-ScheduledTask -TaskName "RNZone_Kiwoom_AutoTrade" -Action $action -Trigger $trigger -Settings $settings
@@ -91,6 +91,10 @@ Register-ScheduledTask -TaskName "RNZone_Kiwoom_AutoTrade" -Action $action -Trig
 
 - `-WakeToRun`: 절전 중이면 깨워서 실행
 - `-StartWhenAvailable`: 그 시각에 PC가 꺼져 있었다면 켜지는 즉시 실행
+
+폴더를 옮기거나 다시 설치하면 작업이 예전 경로를 가리켜 결과 코드 **2147942667**
+(0x8007010B, 디렉터리 이름이 잘못됨)로 실패한다. 창 프로그램은 열 때마다 이를 확인해
+지금 폴더로 자동 재등록한다.
 
 확인 · 즉시 테스트 · 삭제:
 
