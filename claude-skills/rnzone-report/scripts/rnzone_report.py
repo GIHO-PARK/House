@@ -153,7 +153,20 @@ def load_merge_cache(found):
 
 def bars_vol(res, drop_live=True):
     ts = res["timestamp"]
-    q = res["indicators"]["quote"][0]
+    q = {k: list(v) for k, v in res["indicators"]["quote"][0].items()}
+    # 장 마감 직후 야후는 마지막 봉의 close(때로는 high/low)를 None으로 비워 두고 meta에만
+    # 종가를 넣는다. 그대로 두면 그날 봉이 통째로 빠져 하루 전 데이터로 계산하게 되므로,
+    # 정규장이 끝난 봉이면 meta 값으로 채운다.
+    meta = res.get("meta", {})
+    if ts and q.get("close") and q["close"][-1] is None and meta.get("regularMarketPrice") is not None:
+        reg_end = ((meta.get("currentTradingPeriod") or {}).get("regular") or {}).get("end")
+        mkt_time = meta.get("regularMarketTime") or 0
+        if mkt_time >= ts[-1] and (not reg_end or time.time() >= reg_end):
+            q["close"][-1] = meta["regularMarketPrice"]
+            if q["high"][-1] is None and meta.get("regularMarketDayHigh") is not None:
+                q["high"][-1] = meta["regularMarketDayHigh"]
+            if q["low"][-1] is None and meta.get("regularMarketDayLow") is not None:
+                q["low"][-1] = meta["regularMarketDayLow"]
     bars, vols = [], []
     for i in range(len(ts)):
         if q["high"][i] is not None and q["low"][i] is not None and q["close"][i] is not None:
