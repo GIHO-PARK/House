@@ -52,6 +52,8 @@ if errorlevel 1 (
 echo [3/5] Allowing wake timers (so the PC can wake from sleep at 23:45)...
 powercfg /SETACVALUEINDEX SCHEME_CURRENT SUB_SLEEP RTCWAKE 1 >nul 2>&1
 powercfg /SETDCVALUEINDEX SCHEME_CURRENT SUB_SLEEP RTCWAKE 1 >nul 2>&1
+powercfg /SETACVALUEINDEX SCHEME_CURRENT SUB_SLEEP 7bc4a2f9-d8fc-4469-b07b-33eb785aaca0 1800 >nul 2>&1
+powercfg /SETDCVALUEINDEX SCHEME_CURRENT SUB_SLEEP 7bc4a2f9-d8fc-4469-b07b-33eb785aaca0 1800 >nul 2>&1
 powercfg /SETACTIVE SCHEME_CURRENT >nul 2>&1
 
 echo [4/5] Creating desktop shortcut...

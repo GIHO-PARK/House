@@ -382,7 +382,20 @@ def execute(actions: list, *, live: bool) -> list:
     return failed
 
 
+def keep_awake() -> None:
+    """Windows: 실행이 끝날 때까지 PC가 다시 절전에 들어가지 않게 한다(프로세스가 끝나면 자동 해제)."""
+    if os.name != "nt":
+        return
+    try:
+        import ctypes
+        ES_CONTINUOUS, ES_SYSTEM_REQUIRED = 0x80000000, 0x00000001
+        ctypes.windll.kernel32.SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED)
+    except Exception:
+        pass
+
+
 def main() -> None:
+    keep_awake()
     parser = argparse.ArgumentParser(description="RN존 → 키움 자동매매 실행기 (매수·매도)")
     parser.add_argument("--live", action="store_true", help="실제 주문을 제출한다 (기본은 dry-run)")
     parser.add_argument("--max-order-usd", type=float, default=None,

@@ -158,11 +158,25 @@ def register_task() -> tuple[bool, str]:
         f"Register-ScheduledTask -TaskName '{TASK_NAME}' -Action $a -Trigger $t -Settings $s -Force | Out-Null"
     )
     code, out = powershell(script)
-    # 절전 중 깨우기 허용(전원 옵션 '절전 모드 해제 타이머 허용'). 실패해도 안내만 한다.
+    apply_power_settings()
+    return code == 0, out
+
+
+# 시스템 무인 절전 시간 제한(숨은 전원 옵션). 예약 작업이 PC를 깨워도 사람이 없으면 Windows는
+# 기본 2분 뒤 다시 재운다 — 작업이 시작되기 전에 잠들어 그날 주문을 놓친 적이 있어 30분으로 늘린다.
+UNATTEND_SLEEP = "7bc4a2f9-d8fc-4469-b07b-33eb785aaca0"
+UNATTEND_SECONDS = 1800
+
+
+def apply_power_settings() -> None:
+    """절전 해제 타이머 허용 + 무인 깨어남 유지 시간. 실패해도 조용히 넘어간다."""
+    if os.name != "nt":
+        return
     powershell("powercfg /SETACVALUEINDEX SCHEME_CURRENT SUB_SLEEP RTCWAKE 1;"
                "powercfg /SETDCVALUEINDEX SCHEME_CURRENT SUB_SLEEP RTCWAKE 1;"
+               f"powercfg /SETACVALUEINDEX SCHEME_CURRENT SUB_SLEEP {UNATTEND_SLEEP} {UNATTEND_SECONDS};"
+               f"powercfg /SETDCVALUEINDEX SCHEME_CURRENT SUB_SLEEP {UNATTEND_SLEEP} {UNATTEND_SECONDS};"
                "powercfg /SETACTIVE SCHEME_CURRENT")
-    return code == 0, out
 
 
 def unregister_task() -> tuple[bool, str]:
@@ -305,6 +319,10 @@ class App(tk.Tk):
     # 상태 갱신
     def refresh(self) -> None:
         nxt = task_status()
+        if nxt and not getattr(self, "_power_checked", False):
+            # 이미 켜 둔 자동실행에도 새 전원 설정이 적용되도록 프로그램을 열 때 한 번 맞춘다.
+            self._power_checked = True
+            apply_power_settings()
         if nxt and not task_points_here():
             # 예전 설치 폴더를 가리키는 작업 → 이 폴더로 자동 재등록
             ok, out = register_task()
