@@ -168,6 +168,7 @@ def build_actions(payload: dict, account: dict, state: dict, max_order_usd: floa
             positions[sym].update({"entry_date": data_date, "tranches": [1], "qty": h["qty"], "avg": h["avg"]})
             new_fills.append((sym, 1))
             notes.append(f"✅ {sym} 1차 체결 확인 ({h['qty']}주 @ ${h['avg']:.2f}) — 장부 등록")
+    wp_syms = {p["weekly_pay"]["sym"] for p in plan.values() if p.get("weekly_pay")}
     managed = set(positions) | set(plan)
     unmanaged = sorted(s for s in holdings if s not in managed and s not in wp_syms)
     if unmanaged:
@@ -176,7 +177,6 @@ def build_actions(payload: dict, account: dict, state: dict, max_order_usd: floa
     # 예산: 비상금을 뺀 현금. 원화주문을 안 쓰면 달러 주문가능금액이 상한.
     # 같은 날 다시 실행하면 우리 대기 매수주문이 주문가능금액을 이미 묶고 있으므로 되돌려 더한다
     # (아래 6)에서 같은 주문은 유지·재차감되고, 나머지는 취소된다).
-    wp_syms = {p["weekly_pay"]["sym"] for p in plan.values() if p.get("weekly_pay")}
     ours = set(positions) | set(plan) | wp_syms
     held_back = sum(o["price"] * o["remaining"] for o in account.get("open_orders", [])
                     if o["side"] == "buy" and o["sym"] in ours)
