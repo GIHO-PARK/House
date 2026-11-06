@@ -46,6 +46,8 @@ for _stream in (sys.stdout, sys.stderr):
 SCRIPT_DIR = Path(__file__).resolve().parent
 RNZONE_SCRIPT = (SCRIPT_DIR / ".." / ".." / "rnzone-report" / "scripts" / "rnzone_report.py").resolve()
 STATE_PATH = SCRIPT_DIR / "positions.json"
+# 창 프로그램의 '보유 현황'용 — 매 실행(dry-run 포함)의 계좌 잔고와 장부를 그대로 남긴다.
+SNAPSHOT_PATH = SCRIPT_DIR / "account_snapshot.json"
 LOG_PATH = SCRIPT_DIR / "order_log.jsonl"
 
 TIMEOUT_SELL_DISCOUNT = 0.03   # 기간청산은 직전 종가보다 3% 낮은 지정가(사실상 즉시 체결)
@@ -463,6 +465,18 @@ def main() -> None:
         print(f"주문 {len(result['actions'])}건:")
     failed = execute(result["actions"], live=live)
     print(f"주문 후 남은 예산(계획 기준): ${result['budget_left']:,.2f}")
+
+    wp_syms = {(r.get("weekly_pay") or {}).get("sym") for r in result["state"]["positions"].values()}
+    try:
+        SNAPSHOT_PATH.write_text(json.dumps({
+            "at": datetime.now(timezone.utc).isoformat(), "live": live, "data_date": payload["data_date"],
+            "positions": result["state"]["positions"],
+            "others": {s: {**h, "kind": "주배당 적립" if s in wp_syms else "장부 밖"}
+                       for s, h in account.get("holdings", {}).items()
+                       if s not in result["state"]["positions"]},
+        }, ensure_ascii=False, indent=1), encoding="utf-8")
+    except OSError:
+        pass
 
     if live:
         new_state = result["state"]

@@ -2,6 +2,7 @@
 claude-skills/rnzone-kiwoom-autotrade/scripts/order_log.jsonl
 claude-skills/rnzone-kiwoom-autotrade/scripts/executed_signals.json
 claude-skills/rnzone-kiwoom-autotrade/scripts/positions.json
+claude-skills/rnzone-kiwoom-autotrade/scripts/account_snapshot.json
 claude-skills/rnzone-kiwoom-autotrade/scripts/exchange_cache.json
 claude-skills/rnzone-kiwoom-autotrade/daily_run.log
 claude-skills/rnzone-kiwoom-autotrade/.venv/

@@ -31,6 +31,7 @@ ENV_PATH = APP_DIR / ".env"
 LOG_PATH = APP_DIR / "daily_run.log"
 ORDER_LOG_PATH = APP_DIR / "scripts" / "order_log.jsonl"
 POSITIONS_PATH = SCRIPTS / "positions.json"
+SNAPSHOT_PATH = SCRIPTS / "account_snapshot.json"
 RUN_BAT = APP_DIR / "run_daily.bat"
 TASK_NAME = "RNZone_Kiwoom_AutoTrade"
 # 업데이트 출처(공개 저장소). 받은 버전은 version.json에 기록한다.
@@ -40,7 +41,7 @@ VERSION_PATH = APP_DIR / "version.json"
 UPDATE_DIRS = ("claude-skills/rnzone-kiwoom-autotrade/", "claude-skills/rnzone-report/")
 # 사용자 데이터 — 업데이트로 절대 덮어쓰지 않는다
 KEEP_NAMES = {".env", "positions.json", "order_log.jsonl", "daily_run.log", "exchange_cache.json",
-              "discovered.json", "executed_signals.json", "version.json"}
+              "discovered.json", "executed_signals.json", "version.json", "account_snapshot.json"}
 RUN_TIME = "23:45"
 DEFAULT_MAX_ORDER_USD = "7000"
 DEFAULT_RESERVE_KRW = "10000000"
@@ -339,16 +340,28 @@ class App(tk.Tk):
         self.lbl_last.config(text=self.last_run_text())
         for row in self.tree.get_children():
             self.tree.delete(row)
+        # 가장 최근 실행(계획 보기 포함)의 계좌 잔고 기준으로 보여준다. 장부(positions.json)는 실주문 때만
+        # 기록되므로, 낮에 체결이 생기면 장부만 보면 키움 잔고와 어긋나 보인다.
+        positions, others = {}, {}
         try:
             positions = json.loads(POSITIONS_PATH.read_text(encoding="utf-8")).get("positions", {})
         except Exception:
-            positions = {}
+            pass
+        try:
+            snap = json.loads(SNAPSHOT_PATH.read_text(encoding="utf-8"))
+            if not POSITIONS_PATH.exists() or SNAPSHOT_PATH.stat().st_mtime >= POSITIONS_PATH.stat().st_mtime:
+                positions, others = snap.get("positions", {}), snap.get("others", {})
+        except Exception:
+            pass
         for sym, r in positions.items():
             self.tree.insert("", "end", values=(
                 sym, r.get("qty"), f"{r.get('avg', 0):,.2f}",
                 "/".join(f"{t}차" for t in r.get("tranches", [])),
                 f"{r.get('held_days', 0)} / {r.get('hold_limit_days', '-')}일", r.get("entry_date", "")))
-        if not positions:
+        for sym, h in others.items():
+            self.tree.insert("", "end", values=(
+                sym, h.get("qty"), f"{h.get('avg', 0):,.2f}", h.get("kind", ""), "-", ""))
+        if not positions and not others:
             self.tree.insert("", "end", values=("(보유 없음)", "", "", "", "", ""))
 
     @staticmethod
