@@ -419,6 +419,12 @@ def main() -> None:
 
     payload = (json.loads(Path(args.payload_json).read_text(encoding="utf-8"))
                if args.payload_json else fetch_signals())
+    # 비상금(주문에 쓰지 않는 원화 금액)은 설정(.env KIWOOM_RESERVE_KRW)으로 바꿀 수 있다. 없으면 리포트 기본값.
+    if os.getenv("KIWOOM_RESERVE_KRW", "").strip():
+        try:
+            payload["reserve_krw"] = max(0, int(float(os.environ["KIWOOM_RESERVE_KRW"].replace(",", ""))))
+        except ValueError:
+            raise SystemExit("KIWOOM_RESERVE_KRW 값이 숫자가 아닙니다.")
     if args.account_json:
         account = json.loads(Path(args.account_json).read_text(encoding="utf-8"))
     else:

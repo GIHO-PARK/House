@@ -43,6 +43,7 @@ KEEP_NAMES = {".env", "positions.json", "order_log.jsonl", "daily_run.log", "exc
               "discovered.json", "executed_signals.json", "version.json"}
 RUN_TIME = "23:45"
 DEFAULT_MAX_ORDER_USD = "7000"
+DEFAULT_RESERVE_KRW = "10000000"
 NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)
 
 
@@ -503,12 +504,14 @@ class App(tk.Tk):
         frm.pack(fill="both", expand=True)
         fields = [("APP_KEY", "App Key (운영)", False),
                   ("APP_SECRET", "App Secret (운영)", True),
-                  ("KIWOOM_MAX_ORDER_USD", "주문 1건 상한 ($)", False)]
+                  ("KIWOOM_MAX_ORDER_USD", "주문 1건 상한 ($)", False),
+                  ("KIWOOM_RESERVE_KRW", "비상금 (원, 주문에 안 씀)", False)]
         entries = {}
         for i, (key, label, secret) in enumerate(fields):
             ttk.Label(frm, text=label).grid(row=i, column=0, sticky="w", pady=4)
             e = ttk.Entry(frm, width=48, show="•" if secret else "")
-            e.insert(0, env.get(key, DEFAULT_MAX_ORDER_USD if key == "KIWOOM_MAX_ORDER_USD" else ""))
+            e.insert(0, env.get(key, {"KIWOOM_MAX_ORDER_USD": DEFAULT_MAX_ORDER_USD,
+                                      "KIWOOM_RESERVE_KRW": DEFAULT_RESERVE_KRW}.get(key, "")))
             e.grid(row=i, column=1, sticky="we", pady=4, padx=(8, 0))
             entries[key] = e
         krw = tk.BooleanVar(value=env.get("KIWOOM_KRW_ORDER", "").upper() == "YES")
@@ -516,6 +519,7 @@ class App(tk.Tk):
                         variable=krw).grid(row=len(fields), column=1, sticky="w", pady=(6, 0))
         ttk.Label(frm, foreground="#555", wraplength=460, justify="left",
                   text="· 처음 몇 주는 상한을 500 정도로 낮게 두고 확인한 뒤 7000으로 올리세요.\n"
+                       "· 비상금: 계좌 현금 중 이 금액은 주문에 쓰지 않습니다(기본 10,000,000원).\n"
                        "· kiwoomcli setup 으로 이미 인증했다면 Key/Secret은 비워 두세요.\n"
                        "· 이 정보는 이 폴더의 .env 파일에만 저장됩니다.").grid(
             row=len(fields) + 1, column=0, columnspan=2, sticky="w", pady=(10, 0))
@@ -528,6 +532,15 @@ class App(tk.Tk):
             except ValueError:
                 messagebox.showwarning("확인", "주문 1건 상한은 0보다 큰 숫자로 입력해 주세요.", parent=win)
                 return
+            reserve = entries["KIWOOM_RESERVE_KRW"].get().strip().replace(",", "")
+            try:
+                if float(reserve) < 0:
+                    raise ValueError
+            except ValueError:
+                messagebox.showwarning("확인", "비상금은 0 이상의 숫자(원)로 입력해 주세요. 예: 5000000", parent=win)
+                return
+            entries["KIWOOM_RESERVE_KRW"].delete(0, "end")
+            entries["KIWOOM_RESERVE_KRW"].insert(0, str(int(float(reserve))))
             values = dict(env)
             values["KIWOOM_MODE"] = "real"
             for key, e in entries.items():
