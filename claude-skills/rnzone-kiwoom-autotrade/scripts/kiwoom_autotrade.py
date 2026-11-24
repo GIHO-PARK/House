@@ -173,6 +173,8 @@ def build_actions(payload: dict, account: dict, state: dict, max_order_usd: floa
     # 주배당 ETF: 오늘 계획에 없는 본주(이미 매수선을 지나간 보유 종목 등)의 짝도 장부에서 찾는다.
     wp_syms = {p["weekly_pay"]["sym"] for p in plan.values() if p.get("weekly_pay")}
     wp_syms |= {r["weekly_pay"]["sym"] for r in positions.values() if (r.get("weekly_pay") or {}).get("sym")}
+    # 본주를 정리한 뒤에도 적립해 둔 주배당 ETF는 계속 보유한다 — 리포트의 주배당 ETF 전체를 우리 것으로 본다.
+    wp_syms |= set(payload.get("wp_close") or {})
     managed = set(positions) | set(plan)
     unmanaged = sorted(s for s in holdings if s not in managed and s not in wp_syms)
     if unmanaged:
@@ -473,6 +475,7 @@ def main() -> None:
     print(f"주문 후 남은 예산(계획 기준): ${result['budget_left']:,.2f}")
 
     wp_syms = {(r.get("weekly_pay") or {}).get("sym") for r in result["state"]["positions"].values()}
+    wp_syms |= set(payload.get("wp_close") or {})
     try:
         SNAPSHOT_PATH.write_text(json.dumps({
             "at": datetime.now(timezone.utc).isoformat(), "live": live, "data_date": payload["data_date"],
