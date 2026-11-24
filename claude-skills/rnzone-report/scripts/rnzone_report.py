@@ -542,6 +542,8 @@ def main():
             "n_open": n_open,
             "entries": entries,
             "plan": plan,
+            # 주배당 ETF 최신 종가 — 오늘 plan에 없는 보유 본주의 적립 주문 가격에도 쓴다
+            "wp_close": {r["wp"]: round(r["wp_px"], 4) for r in stk_rows if r.get("wp_px")},
             "trading_dates": [datetime.fromtimestamp(t, tz=timezone.utc).strftime("%Y-%m-%d")
                               for t in cal_ts[-150:]],
         }

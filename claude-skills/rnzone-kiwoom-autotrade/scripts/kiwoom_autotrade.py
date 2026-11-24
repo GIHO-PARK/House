@@ -170,7 +170,9 @@ def build_actions(payload: dict, account: dict, state: dict, max_order_usd: floa
             positions[sym].update({"entry_date": data_date, "tranches": [1], "qty": h["qty"], "avg": h["avg"]})
             new_fills.append((sym, 1))
             notes.append(f"✅ {sym} 1차 체결 확인 ({h['qty']}주 @ ${h['avg']:.2f}) — 장부 등록")
+    # 주배당 ETF: 오늘 계획에 없는 본주(이미 매수선을 지나간 보유 종목 등)의 짝도 장부에서 찾는다.
     wp_syms = {p["weekly_pay"]["sym"] for p in plan.values() if p.get("weekly_pay")}
+    wp_syms |= {r["weekly_pay"]["sym"] for r in positions.values() if (r.get("weekly_pay") or {}).get("sym")}
     managed = set(positions) | set(plan)
     unmanaged = sorted(s for s in holdings if s not in managed and s not in wp_syms)
     if unmanaged:
@@ -215,6 +217,10 @@ def build_actions(payload: dict, account: dict, state: dict, max_order_usd: floa
     # 3) 주배당 적립 — 어제 체결된 본주 차수만큼
     for sym, tranche in new_fills:
         wp = positions[sym].get("weekly_pay") if sym in positions else None
+        # 가격은 오늘 리포트의 최신 종가로(장부 값은 1차 체결 때의 종가). 금액(원화 기준)은 장부 값 유지.
+        latest = (payload.get("wp_close") or {}).get((wp or {}).get("sym"))
+        if wp and latest:
+            wp = {**wp, "close": latest}
         if not wp or not wp.get("close"):
             continue
         amt = capped(wp["amount_usd"][str(tranche)])
